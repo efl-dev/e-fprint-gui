@@ -627,6 +627,18 @@ collections {
                rel1.relative: 1.0 0.0;
             }
          }
+         swallow {"swallow_select-finger";
+            scale: 1;
+            desc { "default";
+               align: 0.0 0.0;
+               min: 200 200;
+               max: 200 200;
+               visible: 1;
+               rel1.to_x: "swallow_select-finger-left";
+               rel1.relative: 1.0 0.0;
+            }
+         }
+
          swallow {"swallow_select-finger-right";
             scale: 1;
             desc { "default";

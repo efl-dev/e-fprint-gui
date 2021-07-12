@@ -124,15 +124,28 @@ void
 fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
 {
    Evas_Object *hv, *bt, *bx, *lb;
+   char buf[PATH_MAX];
+   const char *layout;
+   
+   snprintf(buf, sizeof(buf), "<color=white>%s</color>", data);
    
    hv = elm_hover_add(win);
 
    bx = elm_box_add(win);
-   elm_object_part_content_set(hv, "smart", bx);
+   
+   
+   elm_layout_file_get(ly, NULL, &layout);
+   
+   if (strcmp(layout, "finger") == 0)
+      elm_object_part_content_set(hv, "middle", bx);
+   else
+      elm_object_part_content_set(hv, "bottom", bx);
+      
+      
    evas_object_show(bx);
    
    lb = elm_label_add(bx);
-   elm_object_text_set(lb, data);
+   elm_object_text_set(lb, buf);
    evas_object_show(lb);
    elm_box_pack_end(bx, lb);
 
@@ -278,6 +291,14 @@ _swallow_button()
 //    evas_object_smart_callback_add(left_list, "clicked", fingerprint_clicked, "Left thumb");
    evas_object_show(left_list);
    elm_object_part_content_set(ly, "swallow_select-finger-right", left_list);
+   
+   
+   
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "FINGER");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_select-finger", swallow_button);
    
    right_list = elm_list_add(win);
    elm_list_mode_set(right_list, ELM_LIST_EXPAND);
