@@ -1,8 +1,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-// #else
-// #define EFL_BETA_API_SUPPORT
-// #define EFL_EO_API_SUPPORT
+
 #endif
 #include "e-fprint-fprint.c"
 
@@ -17,9 +15,7 @@
 Evas_Object *ly;
 Evas_Object *win;
 
-
-
-
+static void _swallow_button();
 
 static void
 _response_cb(void *data EINA_UNUSED, Evas_Object *obj,
@@ -167,19 +163,30 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
    
    elm_hover_parent_set(hv, win);
    elm_hover_target_set(hv, obj);
-   
-   
+
    evas_object_show(hv);
    
 }
 
+static void
+_switch_hand(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   char buf[PATH_MAX];
+   snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
+   elm_layout_file_set(ly, buf, data);
+   
+   _swallow_button();
+}
 
 static void
 _swallow_button()
 {
-   Evas_Object *swallow_button, *right_list, *left_list;
+   Evas_Object *swallow_button, *right_list, *left_list, *leftright_list;
+   Elm_Object_Item *it;
 
-   /// ALL 10 FINGERS
+   // ALL 10 FINGERS
+
+   // LEFT
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
    evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left little finger");
@@ -210,11 +217,53 @@ _swallow_button()
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-thumb", swallow_button);
    
+   // RIGHT
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right little finger");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_right-little-finger", swallow_button);
+   
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right ring finger");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_right-ring-finger", swallow_button);
+   
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right middle finger");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_right-middle-finger", swallow_button);
+   
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right index finger");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_right-index-finger", swallow_button);
+   
+   swallow_button = elm_button_add(win);
+   elm_object_style_set(swallow_button, "blank");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right thumb");
+   evas_object_show(swallow_button);
+   elm_object_part_content_set(ly, "swallow_right-thumb", swallow_button);
+   
+   // SWITCH LEFT/RIGHT HAND
+   leftright_list = elm_list_add(win);
+   elm_list_multi_select_set(leftright_list, EINA_FALSE);
+   elm_list_select_mode_set(leftright_list, ELM_OBJECT_MULTI_SELECT_MODE_DEFAULT);
+   evas_object_size_hint_weight_set(leftright_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+      
+   elm_list_mode_set(leftright_list, ELM_LIST_EXPAND);
+   it = elm_list_item_append(leftright_list, "Left Hand", NULL, NULL, _switch_hand, "left_hand");
+//    elm_list_item_selected_set(it, EINA_TRUE);
+   elm_list_item_append(leftright_list, "Right Hand", NULL, NULL, _switch_hand, "right_hand");
+   evas_object_show(leftright_list);
+   elm_object_part_content_set(ly, "swallow_hand_switch", leftright_list);
    
    
    
-   
-   /// ONE FINGER
+   // ONE FINGER
    left_list = elm_list_add(win);
    elm_list_multi_select_set(left_list, EINA_FALSE);
    elm_list_select_mode_set(left_list, ELM_OBJECT_MULTI_SELECT_MODE_DEFAULT);
@@ -325,7 +374,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    elm_hoversel_auto_update_set(hv, EINA_TRUE);
    elm_hoversel_hover_parent_set(hv, win);
    elm_hoversel_item_add(hv, "Both hands", NULL, ELM_ICON_NONE, _select_mode, "hands");
-   elm_hoversel_item_add(hv, "One hand", NULL, ELM_ICON_NONE, _select_mode, "hand");
+   elm_hoversel_item_add(hv, "One hand", NULL, ELM_ICON_NONE, _select_mode, "left_hand");
    elm_hoversel_item_add(hv, "One finger", NULL, ELM_ICON_NONE, _select_mode, "finger");
    evas_object_show(hv);
    elm_box_pack_end(h_box, hv);

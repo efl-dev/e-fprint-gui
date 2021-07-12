@@ -279,7 +279,7 @@ collections {
    }
    }
    
-   group { "hand";
+   group { "left_hand";
       images {
          image: "left_hand.png" COMP;
          image: "right_hand.png" COMP;
@@ -307,9 +307,22 @@ collections {
                //aspect: 1 1;
                align: 0.5 0.5;
                rel1.to: "left_hand";
-               rel1.relative: -0.38 -0.36;
+               rel1.relative: -0.40 -0.38;
             }
          }
+         swallow {"swallow_left-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.40 -0.38;
+            }
+         }
+
          image { "left-ring-finger";
             scale: 1;
             desc { "default";
@@ -323,6 +336,19 @@ collections {
                rel1.relative: -0.20 -0.60;
             }
          }
+         swallow {"swallow_left-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.20 -0.60;
+            }
+         }
+
          image { "left-middle-finger";
             scale: 1;
             desc { "default";
@@ -336,6 +362,19 @@ collections {
                rel1.relative: -0.01 -0.75;
             }
          }
+         swallow {"swallow_left-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.01 -0.75;
+            }
+         }
+
          image { "left-index-finger";
             scale: 1;
             desc { "default";
@@ -346,9 +385,22 @@ collections {
                //aspect: 1 1;
                align: 0.5 0.5;
                rel1.to: "left_hand";
-               rel1.relative: 0.21 -0.60;
+               rel1.relative: 0.18 -0.60;
             }
          }
+         swallow {"swallow_left-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: 0.18 -0.60;
+            }
+         }
+
          image { "left-thumb";
             scale: 1;
             desc { "default";
@@ -357,7 +409,193 @@ collections {
                visible: 1;
                image.normal: "fingerprint_icon.png";
                rel1.to: "left_hand";
-               rel1.relative: 0.40 0.0;
+               rel1.relative: 0.38 0.05;
+            }
+         }
+         swallow {"swallow_left-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: 0.38 0.05;
+            }
+         }
+         
+         // LIST SWALLOW
+         swallow {"swallow_hand_switch";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+//                align: 0.0 0.5;
+               rel1.to_y: "left_hand";
+               rel1.relative: 0.6 0.0;
+            }
+         }
+      }
+   }
+   
+   
+   group { "right_hand";
+      images {
+         image: "right_hand.png" COMP;
+         image: "fingerprint_icon.png" COMP;
+      }
+      parts {
+         image { "right_hand";
+            desc { "default";
+               min: 650 400;
+               max: 650 400;
+               rel1.relative: 0.0 0.0;
+               rel2.relative: 1.0 1.0;
+               image.normal: "right_hand.png";
+            }
+         }
+         image { "right-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.40 -0.38;
+            }
+         }
+         swallow {"swallow_right-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.40 -0.38;
+            }
+         }
+
+         image { "right-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.20 -0.60;
+            }
+         }
+         swallow {"swallow_right-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.20 -0.60;
+            }
+         }
+
+         image { "right-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.01 -0.75;
+            }
+         }
+         swallow {"swallow_right-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: 0.01 -0.75;
+            }
+         }
+
+         image { "right-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: -0.18 -0.60;
+            }
+         }
+         swallow {"swallow_right-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: -0.18 -0.60;
+            }
+         }
+
+         image { "right-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               rel1.to: "right_hand";
+               rel1.relative: -0.38 0.05;
+            }
+         }
+         swallow {"swallow_right-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "right_hand";
+               rel1.relative: -0.38 0.05;
+            }
+         }
+         
+         // LIST SWALLOW
+         swallow {"swallow_hand_switch";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+//                align: 0.0 0.5;
+               rel1.to_y: "right_hand";
+               rel1.relative: 0.6 0.0;
             }
          }
       }
