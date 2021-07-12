@@ -1,0 +1,351 @@
+collections {
+   base_scale: 1.0;
+   group { "hands";
+      images {
+         image: "hands.png" COMP;
+         image: "fingerprint_icon.png" COMP;
+      }
+      parts {
+         image { "hands";
+            desc { "default";
+               min: 650 400;
+               max: 650 400;
+               rel1.relative: 0.0 0.0;
+               rel2.relative: 1.0 1.0;
+               image.normal: "hands.png";
+               //aspect: 0 1 ;
+               //aspect_preference: HORIZONTAL;
+            }
+         }
+         image { "left-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.88 -0.36;
+               color: 0 255 0 255;
+            }
+         }
+         swallow {"swallow_left-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.88 -0.36;
+            }
+         }
+         image { "left-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.70 -0.60;
+            }
+         }
+         swallow {"swallow_left-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.70 -0.60;
+            }
+         }
+
+         image { "left-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.51 -0.75;
+            }
+         }
+         swallow {"swallow_left-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.51 -0.75;
+            }
+         }
+
+         image { "left-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.31 -0.60;
+            }
+         }
+         swallow {"swallow_left-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.31 -0.60;
+            }
+         }
+
+         image { "left-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               rel1.to: "hands";
+               rel1.relative: -0.10 0.05;
+            }
+         }
+         swallow {"swallow_left-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "hands";
+               rel1.relative: -0.10 0.05;
+            }
+         }
+      }
+   programs {
+//       program {
+//       name: "fingerprint_clicked";
+//       signal: "mouse,clicked,1";
+//       source: "left-little-finger";
+//         script {
+//            emit("fingerprint_clicked", "left-little-finger");
+//         }
+//       }
+   }
+   }
+   
+   group { "hand";
+      images {
+         image: "left_hand.png" COMP;
+         image: "right_hand.png" COMP;
+         image: "fingerprint_icon.png" COMP;
+      }
+      parts {
+         image { "left_hand";
+            desc { "default";
+               min: 650 400;
+               max: 650 400;
+               rel1.relative: 0.0 0.0;
+               rel2.relative: 1.0 1.0;
+               image.normal: "left_hand.png";
+               //aspect: 0 1 ;
+               //aspect_preference: HORIZONTAL;
+            }
+         }
+         image { "left-little-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.38 -0.36;
+            }
+         }
+         image { "left-ring-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.20 -0.60;
+            }
+         }
+         image { "left-middle-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: -0.01 -0.75;
+            }
+         }
+         image { "left-index-finger";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               //aspect: 1 1;
+               align: 0.5 0.5;
+               rel1.to: "left_hand";
+               rel1.relative: 0.21 -0.60;
+            }
+         }
+         image { "left-thumb";
+            scale: 1;
+            desc { "default";
+               min: 40 40;
+               max: 40 40;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               rel1.to: "left_hand";
+               rel1.relative: 0.40 0.0;
+            }
+         }
+      }
+   }
+   
+   group { "finger";
+      images {
+         image: "fingerprint_icon.png" COMP;
+      }
+      parts {
+         swallow {"swallow_select-finger-left";
+            scale: 1;
+            desc { "default";
+               align: 0 0.5;
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+            }
+         }
+         image { "left-little-finger";
+            scale: 1;
+            desc { "default";
+               align: 0.0 0.0;
+               min: 200 200;
+               max: 200 200;
+               visible: 1;
+               image.normal: "fingerprint_icon.png";
+               rel1.to_x: "swallow_select-finger-left";
+               rel1.relative: 1.0 0.0;
+            }
+         }
+         swallow {"swallow_select-finger-right";
+            scale: 1;
+            desc { "default";
+               align: 1.0 0.5;
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               rel1.to_x: "left-little-finger";
+               rel1.relative: 1.0 0.0;
+            }
+         }
+      }
+   programs {
+//       program {
+//       name: "fingerprint_clicked";
+//       signal: "mouse,clicked,1";
+//       source: "left-little-finger";
+//         script {
+//            emit("fingerprint_clicked", "left-little-finger");
+//         }
+//       }
+   }
+}
+
+   group { "enroll";
+      images {
+         image: "1_0.png" COMP;
+         image: "1_1.png" COMP;
+         image: "1_2.png" COMP;
+         image: "1_3.png" COMP;
+         image: "1_4.png" COMP;
+         image: "1_5.png" COMP;
+      }
+      parts {
+         image { "1_0";
+            scale: 1;
+            desc { "default";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_4.png";
+            }
+            desc { "1_1";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_1.png";
+            }
+            desc { "1_2";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_2.png";
+            }
+            desc { "1_3";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_3.png";
+            }
+            desc { "1_4";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_4.png";
+            }
+            desc { "1_5";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_5.png";
+            }
+         }
+      }
+   programs {
+//       program {
+//       name: "fingerprint_clicked";
+//       signal: "mouse,clicked,1";
+//       source: "left-little-finger";
+//         script {
+//            emit("fingerprint_clicked", "left-little-finger");
+//         }
+//       }
+   }
+}
+

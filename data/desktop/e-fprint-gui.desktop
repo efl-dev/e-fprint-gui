@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=e-fprint-gui
+Name[de]=e-fprint-gui
+GenericName=GUI for fingerprint (fprint)
+Comment=Efl GUI for fingerprint (fprint)
+Icon=e-fprint-gui.png
+TryExec=e-fprint-gui
+Exec=e-fprint-gui
+Categories=Utility
