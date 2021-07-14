@@ -105,5 +105,8 @@ install_data('AUTHORS',
 if use_translations
   subdir('po')
 endif
+
+eldbus_codegen = find_program('eldbus-codegen')
+
 subdir('src')
 subdir('data')
