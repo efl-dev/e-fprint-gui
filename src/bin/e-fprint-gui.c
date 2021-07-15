@@ -11,18 +11,41 @@
 #include <Ecore_Getopt.h>
 #include <Elementary.h>
 #include <Elementary_Cursor.h>
+#include "eldbus_fprint_device.h"
+#include "eldbus_fprint_manager.h"
+
+Eldbus_Connection *conn;
+Eldbus_Proxy *new_proxy;
+Eldbus_Proxy *new_proxy1;
+Eldbus_Pending *p;
+Eldbus_Pending *p1;
 
 Evas_Object *ly;
 Evas_Object *win;
 
+const char *default_device;
+
+static void enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args);
 static void _swallow_button();
+static void claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
+
 
 static void
-_response_cb(void *data EINA_UNUSED, Evas_Object *obj,
-             void *event_info EINA_UNUSED)
+cancel_enroll(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
 {
+   if(error)
+   {
+      printf("START ENROLL: %s\n", error->message);
+      printf("START ENROLL: %s\n", error->error);
+   }
+}
+
+static void
+_response_cb(void *data EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+//    Evas_Object *popup = data;
    evas_object_del(obj);
-   //TODO: enroll ordentlich abbrechen
+   fprint_device_enroll_stop_call(new_proxy1, cancel_enroll, NULL);
 }
 
 static void
@@ -35,6 +58,18 @@ _dismiss_hover(void *data, Evas_Object *obj EINA_UNUSED,
    elm_hover_dismiss(hv);
 }
 
+static void
+_enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   if(error)
+   {
+      printf("START ENROLL: %s\n", error->message);
+      printf("START ENROLL: %s\n", error->error);
+   
+//       evas_object_del(data);
+      //TODO: Auth fehler anzeigen
+   }
+}
 
 static void
 _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
@@ -109,6 +144,10 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    // popup show should be called after adding all the contents and the buttons
    // of popup to set the focus into popup's contents correctly.
    evas_object_show(popup);
+   
+   //
+   fprint_device_enroll_start_call(new_proxy1, _enroll_start_cb, popup, "right-middle-finger");
+   //
 }
 
 
@@ -188,6 +227,7 @@ _switch_hand(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNU
    snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
    elm_layout_file_set(ly, buf, data);
    
+   fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, "simon");
    _swallow_button();
 }
 
@@ -287,7 +327,7 @@ _swallow_button()
    elm_list_item_append(left_list, "Left middle finger", NULL, NULL, NULL, NULL);
    elm_list_item_append(left_list, "Left index finger", NULL, NULL, NULL, NULL);
    elm_list_item_append(left_list, "Left ring finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(left_list, "Left thunb", NULL, NULL, NULL, NULL);
+   elm_list_item_append(left_list, "Left thumb", NULL, NULL, NULL, NULL);
 //    evas_object_smart_callback_add(left_list, "clicked", fingerprint_clicked, "Left thumb");
    evas_object_show(left_list);
    elm_object_part_content_set(ly, "swallow_select-finger-right", left_list);
@@ -306,7 +346,7 @@ _swallow_button()
    elm_list_item_append(right_list, "Right middle finger", NULL, NULL, NULL, NULL);
    elm_list_item_append(right_list, "Right index finger", NULL, NULL, NULL, NULL);
    elm_list_item_append(right_list, "Right ring finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(right_list, "Right thunb", NULL, NULL, NULL, NULL);
+   elm_list_item_append(right_list, "Right thumb", NULL, NULL, NULL, NULL);
 //    evas_object_smart_callback_add(right_list, "clicked", fingerprint_clicked, "Left thumb");
    evas_object_show(right_list);
    elm_object_part_content_set(ly, "swallow_select-finger-left", right_list);
@@ -318,16 +358,145 @@ static void _select_mode(void *data, Evas_Object *obj, void *event_info)
    snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
    elm_layout_file_set(ly, buf, data);
    
+   fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, "simon");
    _swallow_button();
 }
 
+///////////
+
+static void
+get_devices(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args)
+{
+// //    printf("LIST: %i\n", (const char)data);
+   if(error)
+      printf("ERROR: %s\n", error->error);
+   if(error)
+   printf("MESSAGE: %s\n", error->message);
+}
+
+static void
+get_default_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, const char *device)
+{
+   printf("DEFAULT: %s\n", device);
+   if(error)
+      printf("ERROR: %s\n", error->error);
+   if(error)
+   printf("MESSAGE: %s\n", error->message);
+}
+
+static void
+enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args)
+{
+   Eina_Value *v, array;
+   const char *txt;
+   unsigned i;
+   
+   if(error)
+   {
+      printf("ERROR: %s\n", error->error);
+      printf("MESSAGE: %s\n", error->message);
+   }else
+   {
+      eina_value_struct_value_get(args, "arg0", &array);
+      for (i = 0; i < eina_value_array_count(&array); i++)
+      {
+         eina_value_array_get(&array, i, &txt);
+         edje_object_signal_emit(ly, "enroll_rif", txt);
+         printf("\t%s\n", txt);
+         //TODO: Enrolled finger abspreichern, dass es beim Theme wechsel geladen werden kann
+      }
+      eina_value_flush(&array);
+   }
+   
+
+}
 
 
+static void
+get_device_proberties(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Proxy *proxy, Eldbus_Error_Info *error_info, const char *value)
+{
+   char buf[PATH_MAX];
+   Evas_Object *lb = data;
 
+   if(value)
+   {
+      printf("NAME: %s\n", value);
+      snprintf(buf, sizeof(buf), "Device Name: <color=white>%s</color>", value);
+      elm_object_text_set(lb, buf);
+   }
+   else
+      elm_object_text_set(lb, "NO NAME");
+}
+
+static void
+get_device_type(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Proxy *proxy, Eldbus_Error_Info *error_info, const char *value)
+{
+   char buf[PATH_MAX];
+   Evas_Object *lb1 = data;
+
+   if(value)
+   {
+      printf("Type: %s\n", value);
+      snprintf(buf, sizeof(buf), "Device Type: <color=white>%s</color>", value);
+      elm_object_text_set(lb1, buf);
+   }
+   else
+      elm_object_text_set(lb1, "NO NAME");
+}
+
+static void
+retry_claim_device(void* data, Evas_Object* o EINA_UNUSED, void* event EINA_UNUSED)
+{
+   Evas_Object *notify = data;
+   
+   if(notify)
+      evas_object_del(notify);
+   
+   fprint_device_claim_call(new_proxy1, claim_device, NULL, "simon");
+}
+
+static void
+claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   if(error){
+      printf("ERROR: %s\n", error->error);
+      printf("MESSAGE: %s\n", error->message);
+      
+      Evas_Object *notify, *bx, *bxv, *o;
+   
+      notify = elm_notify_add(win);
+      
+      bx = elm_box_add(notify);
+
+      o = elm_label_add(bx);
+      elm_object_text_set(o, gettext("Could not claim device<br>Please cancel all other fprint sessions<br>and press retry<br>"));
+      evas_object_show(o);
+      elm_box_pack_end(bx, o);
+      
+      bxv = elm_box_add(notify);
+
+      o = elm_button_add(bxv);
+      elm_object_text_set(o, gettext("retry"));
+      evas_object_smart_callback_add(o, "clicked", retry_claim_device, notify);
+      evas_object_show(o);
+      elm_box_pack_end(bxv, o);
+      
+      evas_object_show(bxv);
+      
+      elm_box_pack_end(bx, bxv);
+      
+      evas_object_show(bx);
+      elm_object_content_set(notify, bx);
+      evas_object_show(notify);
+   }
+}
+////////
+   
+   
 EAPI_MAIN int
 elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
 {
-   Evas_Object *box, *lb, *h_box, *panel, *hv;
+   Evas_Object *box, *lb, *lb1, *h_box, *panel, *hv, *p_box, *sep;
    
    char buf[PATH_MAX];
 
@@ -341,6 +510,32 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    bind_textdomain_codeset(PACKAGE, "UTF-8");
    textdomain(PACKAGE);
    #endif
+   //////////////////
+   
+
+     
+   eldbus_init();
+
+   conn = eldbus_connection_get(ELDBUS_CONNECTION_TYPE_SYSTEM);
+   if (!conn)
+     {
+        fprintf(stderr, "Error: could not get system bus\n");
+        return EXIT_FAILURE;
+     }
+     
+   new_proxy = fprint_manager_proxy_get(conn, "net.reactivated.Fprint", "/net/reactivated/Fprint/Manager");
+
+   p1 = fprint_manager_get_default_device_call(new_proxy, get_default_device, NULL);
+   
+   new_proxy1 = fprint_device_proxy_get(conn, "net.reactivated.Fprint", "/net/reactivated/Fprint/Device/0");
+   
+   fprint_device_claim_call(new_proxy1, claim_device, NULL, "simon");
+   
+//    p = fprint_manager_get_devices_call(new_proxy, get_devices, NULL);
+   
+   fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, "simon");
+   
+     //////////////////////
    
    // set app informations
    elm_app_name_set("Fingerprint Configuration (e-fprint-gui)");
@@ -371,11 +566,8 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    elm_layout_file_set(ly, buf, "hands");
    evas_object_show(ly);
          
-//    Evas_Object *edje_obj = elm_layout_edje_get(ly);
-//    edje_object_signal_callback_add(edje_obj, "fingerprint_clicked", "left-little-finger", fingerprint_clicked, win);
-//    edje_object_signal_callback_add(edje_obj, "fingerprint_clicked", "left-little-finger", fingerprint_clicked, win);
    
-   _swallow_button();
+   _swallow_button(); // ADD "blank" Buttons for callbacks
    
 
 
@@ -410,10 +602,29 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    evas_object_size_hint_align_set(panel, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(panel);
 
+   
+   p_box = elm_box_add(panel);
+   elm_box_horizontal_set(p_box, EINA_TRUE);
+   evas_object_size_hint_align_set(p_box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   
    lb = elm_label_add(panel);
-   elm_object_text_set(lb, "Device Information:Bus 002 Device 003: ID 04f3:0c28 Elan Microelectronics Corp. ELAN:Fingerprint");
+      fprint_device_name_propget(new_proxy1, get_device_proberties, lb); // DEVICE NAME
    evas_object_show(lb);
-   elm_object_content_set(panel, lb);
+   elm_box_pack_end(p_box, lb);
+   
+   sep = elm_separator_add(panel);
+   elm_separator_horizontal_set(sep, EINA_FALSE);
+   evas_object_show(sep);
+   elm_box_pack_end(p_box, sep);
+   
+   
+   lb1 = elm_label_add(panel);
+      fprint_device_scan_type_propget(new_proxy1, get_device_type, lb1); // DEVICE TYPE
+   evas_object_show(lb1);
+   elm_box_pack_end(p_box, lb1);
+   
+   elm_object_content_set(panel, p_box);
+   
    elm_box_pack_end(box, panel);
 
    evas_object_show(win);
