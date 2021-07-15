@@ -28,6 +28,9 @@ collections {
                align: 0.5 0.5;
                rel1.to: "hands";
                rel1.relative: -0.88 -0.36;
+            }
+            desc { "enrolled";
+               inherit: "default";
                color: 0 255 0 255;
             }
          }
@@ -55,6 +58,10 @@ collections {
                rel1.to: "hands";
                rel1.relative: -0.70 -0.60;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_left-ring-finger";
             scale: 1;
@@ -79,6 +86,10 @@ collections {
                align: 0.5 0.5;
                rel1.to: "hands";
                rel1.relative: -0.51 -0.75;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_left-middle-finger";
@@ -105,6 +116,10 @@ collections {
                rel1.to: "hands";
                rel1.relative: -0.31 -0.60;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_left-index-finger";
             scale: 1;
@@ -127,6 +142,10 @@ collections {
                image.normal: "fingerprint_icon.png";
                rel1.to: "hands";
                rel1.relative: -0.10 0.05;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_left-thumb";
@@ -153,6 +172,9 @@ collections {
                align: 0.5 0.5;
                rel1.to: "hands";
                rel1.relative: 0.88 -0.36;
+            }
+            desc { "enrolled";
+               inherit: "default";
                color: 0 255 0 255;
             }
          }
@@ -180,6 +202,10 @@ collections {
                rel1.to: "hands";
                rel1.relative: 0.70 -0.60;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_right-ring-finger";
             scale: 1;
@@ -205,6 +231,10 @@ collections {
                rel1.to: "hands";
                rel1.relative: 0.51 -0.75;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_right-middle-finger";
             scale: 1;
@@ -225,10 +255,13 @@ collections {
                max: 40 40;
                visible: 1;
                image.normal: "fingerprint_icon.png";
-               //aspect: 1 1;
                align: 0.5 0.5;
                rel1.to: "hands";
                rel1.relative: 0.31 -0.60;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_right-index-finger";
@@ -268,14 +301,18 @@ collections {
          }
       }
    programs {
-//       program {
-//       name: "fingerprint_clicked";
-//       signal: "mouse,clicked,1";
-//       source: "left-little-finger";
-//         script {
-//            emit("fingerprint_clicked", "left-little-finger");
-//         }
-//       }
+         program {
+         name: "enroll_rif";
+         signal: "enroll_rif";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+//             new buf[500];
+//                snprintf(buf, 500, "[%s]", sig);
+//                echo(buf);
+               set_state(get_part_id(src), "enrolled", 0.0);
+         }
+   }
    }
    }
    
@@ -309,6 +346,10 @@ collections {
                rel1.to: "left_hand";
                rel1.relative: -0.40 -0.38;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_left-little-finger";
             scale: 1;
@@ -334,6 +375,10 @@ collections {
                align: 0.5 0.5;
                rel1.to: "left_hand";
                rel1.relative: -0.20 -0.60;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_left-ring-finger";
@@ -361,6 +406,10 @@ collections {
                rel1.to: "left_hand";
                rel1.relative: -0.01 -0.75;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_left-middle-finger";
             scale: 1;
@@ -387,6 +436,10 @@ collections {
                rel1.to: "left_hand";
                rel1.relative: 0.18 -0.60;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_left-index-finger";
             scale: 1;
@@ -410,6 +463,10 @@ collections {
                image.normal: "fingerprint_icon.png";
                rel1.to: "left_hand";
                rel1.relative: 0.38 0.05;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_left-thumb";
@@ -439,6 +496,20 @@ collections {
             }
          }
       }
+   programs {
+         program {
+         name: "enroll_rif";
+         signal: "enroll_rif";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+//             new buf[500];
+//                snprintf(buf, 500, "[%s]", sig);
+//                echo(buf);
+               set_state(get_part_id(src), "enrolled", 0.0);
+         }
+   }
+   }
    }
    
    
@@ -469,6 +540,10 @@ collections {
                rel1.to: "right_hand";
                rel1.relative: 0.40 -0.38;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_right-little-finger";
             scale: 1;
@@ -494,6 +569,10 @@ collections {
                align: 0.5 0.5;
                rel1.to: "right_hand";
                rel1.relative: 0.20 -0.60;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_right-ring-finger";
@@ -521,6 +600,10 @@ collections {
                rel1.to: "right_hand";
                rel1.relative: 0.01 -0.75;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_right-middle-finger";
             scale: 1;
@@ -547,6 +630,10 @@ collections {
                rel1.to: "right_hand";
                rel1.relative: -0.18 -0.60;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_right-index-finger";
             scale: 1;
@@ -570,6 +657,10 @@ collections {
                image.normal: "fingerprint_icon.png";
                rel1.to: "right_hand";
                rel1.relative: -0.38 0.05;
+            }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
             }
          }
          swallow {"swallow_right-thumb";
@@ -599,6 +690,20 @@ collections {
             }
          }
       }
+   programs {
+         program {
+         name: "enroll_rif";
+         signal: "enroll_rif";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+//             new buf[500];
+//                snprintf(buf, 500, "[%s]", sig);
+//                echo(buf);
+               set_state(get_part_id(src), "enrolled", 0.0);
+         }
+   }
+   }
    }
    
    group { "finger";
@@ -626,6 +731,10 @@ collections {
                rel1.to_x: "swallow_select-finger-left";
                rel1.relative: 1.0 0.0;
             }
+            desc { "enrolled";
+               inherit: "default";
+               color: 0 255 0 255;
+            }
          }
          swallow {"swallow_select-finger";
             scale: 1;
@@ -652,14 +761,18 @@ collections {
          }
       }
    programs {
-//       program {
-//       name: "fingerprint_clicked";
-//       signal: "mouse,clicked,1";
-//       source: "left-little-finger";
-//         script {
-//            emit("fingerprint_clicked", "left-little-finger");
-//         }
-//       }
+         program {
+         name: "enroll_rif";
+         signal: "enroll_rif";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+//             new buf[500];
+//                snprintf(buf, 500, "[%s]", sig);
+//                echo(buf);
+               set_state(get_part_id(src), "enrolled", 0.0);
+         }
+   }
    }
 }
 
