@@ -28,6 +28,7 @@ Evas_Object *lb_status;
 const char *default_device = NULL;
 const char *device_type = NULL;
 const char *currentuser;
+const char *currentfinger;
 int enroll_count = 1;
 
 Eina_Value array;
@@ -37,6 +38,7 @@ static void enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending 
 static void _swallow_button();
 static void claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 static void _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
+static void _verify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 
 
 const char*
@@ -71,6 +73,14 @@ _to_fprint_fingername(const char *data)
    return name;
 }
 
+static void
+_close_verify_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   Evas_Object *popup = data;
+   evas_object_del(popup);
+   popup = NULL;
+   fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
+}
 
 static void
 _close_enroll_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
@@ -109,8 +119,8 @@ _verify_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
    
    if(error)
    {
-      printf("VERIFY _enroll_start_cb: %s\n", error->message);
-      printf("VERIFY _enroll_start_cb: %s\n", error->error);
+      printf("MESSAGE _verify_start_cb: %s\n", error->message);
+      printf("ERROR _verify_start_cb: %s\n", error->error);
    
       popup = data;
       evas_object_del(popup);
@@ -152,7 +162,7 @@ _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
 
    popup = elm_popup_add(win);
    elm_popup_scrollable_set(popup, EINA_FALSE);
-   evas_object_smart_callback_add(popup, "block,clicked", _close_enroll_popup, popup);
+   evas_object_smart_callback_add(popup, "block,clicked", _close_verify_popup, popup);
    
    box = elm_box_add(popup);
    evas_object_show(box);
@@ -390,9 +400,9 @@ fingerprint_clicked_finger_mode(void *data, Evas_Object *obj, void *event_info)
    
    fingername = _to_fprint_fingername(elm_object_item_text_get(selected_item));
 
+   currentfinger = strdup(fingername);
    printf("FINGERNAME LIST FPRINT FINGERNAME: %s\n", fingername);
    //
-   
    snprintf(buf, sizeof(buf), "<color=white>%s</color>", elm_object_item_text_get(selected_item));
    
    hv = elm_hover_add(win);
@@ -473,6 +483,8 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
    const char *fingername;
    const char *txt;
    int i, found = 0;
+   
+   currentfinger = strdup(data);
    
    fingername = _to_readable_fingername(data);
    snprintf(buf, sizeof(buf), "<color=white>%s</color>", fingername);
@@ -892,24 +904,24 @@ _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
 }
 
 static void
-_verfify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+_verify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
 {
    if(error)
    {
-      printf("MESSAGE _enroll_stopp_cb: %s\n", error->message);
-      printf("ERROR _enroll_stopp_cb: %s\n", error->error);
+      printf("MESSAGE _veriify_stopp_cb: %s\n", error->message);
+      printf("ERROR _veriify_stopp_cb: %s\n", error->error);
 
    }
 }
 
 
 static void
-_verfify_status(void *data, const Eldbus_Message *msg)
+_verify_status(void *data, const Eldbus_Message *msg)
 {
    const char *status;
 
    char buf[PATH_MAX];
-   char buf1[PATH_MAX];
+
    EINA_SAFETY_ON_TRUE_RETURN(eldbus_message_error_get(msg, NULL, NULL));
 
    if (!eldbus_message_arguments_get(msg, "s", &status))
@@ -917,8 +929,6 @@ _verfify_status(void *data, const Eldbus_Message *msg)
         fprintf(stderr, "Error: could not get entry contents\n");
         return;
      }
-
-   snprintf(buf1, sizeof(buf1), "%i", enroll_count);
    
    if(!strcmp(status, "verify-match"))
    {
@@ -931,26 +941,56 @@ _verfify_status(void *data, const Eldbus_Message *msg)
       elm_layout_file_get(ly_popup, NULL, &layout);
       printf("LAYOUT %s\n", layout);
 
-      enroll_count++;
+      fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
+      fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, currentfinger); //TODO: restart verify
    }
+   else if(!strcmp(status, "verify-retry-scan"))
+   {
+      snprintf(buf, sizeof(buf), "<color=white>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+   }
+   else if(!strcmp(status, "verify-swipe-too-short"))
+   {
+      snprintf(buf, sizeof(buf), "<color=white>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+   }
+   else if(!strcmp(status, "verify-finger-not-centered"))
+   {
+      snprintf(buf, sizeof(buf), "<color=white>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+   }
+   else if(!strcmp(status, "verify-remove-and-retry"))
+   {
+      snprintf(buf, sizeof(buf), "<color=white>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+   }
+   else if(!strcmp(status, "verify-disconnected"))
+   {
+      snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+      
+      edje_object_signal_emit(ly_popup, "failed", "failed");
+      fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
+
+      fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, currentfinger); //TODO: restart verify
+   }   
    else if(!strcmp(status, "verify-no-match"))
    {
       snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "failed", "failed");
+      fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
 
-//       fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, "any"); //TODO: restart verify
-      enroll_count = 1;
+      fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, currentfinger); //TODO: restart verify
    }   
    else
    {
       elm_object_text_set(lb_status, "<color=red>unknown error</color>");
 
       edje_object_signal_emit(ly_popup, "failed", "failed");
-      enroll_count = 1;
       
-      fprint_device_verify_stop_call(new_proxy1, _verfify_stopp_cb, NULL);
+      fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
    }
 }
 
@@ -1081,7 +1121,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    printf("DEFAULT DEVICE %s\n\n", default_device);
    
    eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "EnrollStatus", _enroll_status, NULL);
-   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "VerifyStatus", _verfify_status, NULL);
+   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "VerifyStatus", _verify_status, NULL);
    
 
    

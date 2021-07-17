@@ -1013,12 +1013,19 @@ collections {
          }
    programs {
          program {
+         name: "reset1";
+         transition: ACCEL 4.0;
+         action: STATE_SET "default" 0.0;
+         target: "0";
+   }
+         program {
          name: "verify";
          signal: "success";
          source: "success";
          transition: LINEAR 0.2;
          action: STATE_SET "success" 0.0;
          target: "0";
+         after: "reset1";
    }
          program {
          name: "reset";
