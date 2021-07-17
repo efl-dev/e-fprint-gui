@@ -525,6 +525,18 @@ collections {
                set_state(get_part_id(src), "enrolled", 0.0);
          }
    }
+         program {
+         name: "reset_finger";
+         signal: "reset_finger";
+         source: "reset_finger";
+         transition: LINEAR 0.2;
+         action: STATE_SET "default" 0.0;
+         target: "right-little-finger";
+         target: "right-ring-finger";
+         target: "right-middle-finger";
+         target: "right-index-finger";
+         target: "right-thumb";
+   }
    }
    }
    
@@ -716,11 +728,20 @@ collections {
          source: "*";
          transition: LINEAR 0.2;
          script {
-//             new buf[500];
-//                snprintf(buf, 500, "[%s]", sig);
-//                echo(buf);
                set_state(get_part_id(src), "enrolled", 0.0);
          }
+   }
+         program {
+         name: "reset_finger";
+         signal: "reset_finger";
+         source: "reset_finger";
+         transition: LINEAR 0.2;
+         action: STATE_SET "default" 0.0;
+         target: "left-little-finger";
+         target: "left-ring-finger";
+         target: "left-middle-finger";
+         target: "left-index-finger";
+         target: "left-thumb";
    }
    }
    }
@@ -817,21 +838,26 @@ collections {
          image: "1_5_failed.svg" COMP;
       }
       parts {
-         image { "1_0";
+         image { "0";
             scale: 1;
             desc { "default";
                min: 140 140;
                max: 140 140;
                visible: 1;
                image.normal: "1_0.svg";
+            }            
+            desc { "failed";
+               inherit: "default";
+               visible: 1;
+               color: 255 0 0 255;
             }
          }
-         image { "1_1";
+         image { "1";
             scale: 1;
             desc { "default";
                min: 140 140;
                max: 140 140;
-               visible: 1;
+               visible: 0;
                image.normal: "1_1.svg";
             }
             desc { "success";
@@ -844,7 +870,7 @@ collections {
                image.normal: "1_1_failed.svg";
             }
          }
-         image { "1_2";
+         image { "2";
             scale: 1;
             desc { "default";
                min: 140 140;
@@ -862,7 +888,7 @@ collections {
                image.normal: "1_2_failed.svg";
             }
          }
-         image { "1_3";
+         image { "3";
             scale: 1;
             desc { "default";
                min: 140 140;
@@ -880,7 +906,7 @@ collections {
                image.normal: "1_3_failed.svg";
             }
          }
-         image { "1_4";
+         image { "4";
             scale: 1;
             desc { "default";
                min: 140 140;
@@ -898,7 +924,7 @@ collections {
                image.normal: "1_4_failed.svg";
             }
          }
-         image { "1_5";
+         image { "5";
             scale: 1;
             desc { "default";
                min: 140 140;
@@ -918,14 +944,31 @@ collections {
          }
       }
    programs {
-//       program {
-//       name: "fingerprint_clicked";
-//       signal: "mouse,clicked,1";
-//       source: "left-little-finger";
-//         script {
-//            emit("fingerprint_clicked", "left-little-finger");
-//         }
-//       }
+         program {
+         name: "enrolled_state_success";
+         signal: "success";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+               set_state(get_part_id(src), "success", 0.0);
+         }
+   }
+         program {
+         name: "enrolled_state_failed";
+         signal: "failed";
+         source: "*";
+         transition: LINEAR 0.2;
+         script {
+               set_state(get_part_id(src), "failed", 0.0);
+         }
+   }
+         program {
+         name: "enrolled__failed";
+         signal: "failed";
+         source: "*";
+         transition: LINEAR 0.2;
+         action: STATE_SET "failed" 0.0;
+         target: "0";
+   }
    }
 }
-
