@@ -36,6 +36,7 @@ Eina_Value array;
 static void enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args);
 static void _swallow_button();
 static void claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
+static void _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 
 
 const char*
@@ -70,15 +71,6 @@ _to_fprint_fingername(const char *data)
    return name;
 }
 
-static void
-cancel_enroll(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
-{
-   if(error)
-   {
-      printf("MESSAGE cancel_enroll: %s\n", error->message);
-      printf("ERROR cancel_enroll: %s\n", error->error);
-   }
-}
 
 static void
 _close_enroll_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
@@ -86,7 +78,7 @@ _close_enroll_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
    Evas_Object *popup = data;
    evas_object_del(popup);
    popup = NULL;
-   fprint_device_enroll_stop_call(new_proxy1, cancel_enroll, NULL);
+   fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
 }
 
 static void
@@ -665,7 +657,10 @@ get_default_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eld
 {
    printf("DEFAULT: %s\n", device);
    
-   default_device = strdup(device);
+   if(device)
+      default_device = strdup(device);
+   
+   printf("DDEFAULT: %s\n", default_device);
    if(error)
       printf("ERROR get_default_device: %s\n", error->error);
    if(error)
@@ -779,7 +774,18 @@ claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Er
    }
 }
 ////////
-   
+static void
+_enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   if(error)
+   {
+      printf("MESSAGE _enroll_stopp_cb: %s\n", error->message);
+      printf("ERROR _enroll_stopp_cb: %s\n", error->error);
+
+   }
+}
+
+
 static void
 _enroll_status(void *data, const Eldbus_Message *msg)
 {
@@ -834,34 +840,34 @@ _enroll_status(void *data, const Eldbus_Message *msg)
       edje_object_signal_emit(ly_popup, "failed", buf1);
       enroll_count = 1;
       
-      //TODO: enroll abbrechen
+      fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
    else if(!strcmp(status, "enroll-disconnected"))
    {
       elm_object_text_set(lb_status, "<color=red>enroll disconnected</color>");
 
-      edje_object_signal_emit(ly_popup, "failed", buf1);
+      edje_object_signal_emit(ly_popup, "enrolled__failed", "enrolled__failed");
       enroll_count = 1;
       
-      //TODO: enroll abbrechen
+      fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
    else if(!strcmp(status, "enroll-data-full"))
    {
       elm_object_text_set(lb_status, "<color=red>enroll.data full<br> No further prints can be enrolled on this device</color>");
 
-      edje_object_signal_emit(ly_popup, "failed", buf1);
+      edje_object_signal_emit(ly_popup, "enrolled__failed", "enrolled__failed");
       enroll_count = 1;
       
-      //TODO: enroll abbrechen
+      fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
    else
    {
       elm_object_text_set(lb_status, "<color=red>unknown error</color>");
 
-      edje_object_signal_emit(ly_popup, "failed", buf1);
+      edje_object_signal_emit(ly_popup, "enrolled__failed", "enrolled__failed");
       enroll_count = 1;
       
-      //TODO: enroll abbrechen
+      fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
 }
 
@@ -902,7 +908,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    new_proxy = fprint_manager_proxy_get(conn, "net.reactivated.Fprint", "/net/reactivated/Fprint/Manager");
    
    p1 = fprint_manager_get_default_device_call(new_proxy, get_default_device, NULL);
-   
+   default_device = "/net/reactivated/Fprint/Device/0";
    printf("DEFAULT DEVICE %s\n\n", default_device);
    
    eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "EnrollStatus", _enroll_status, NULL);
