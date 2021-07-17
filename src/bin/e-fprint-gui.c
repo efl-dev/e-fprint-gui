@@ -220,11 +220,10 @@ _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
    // popup show should be called after adding all the contents and the buttons
    // of popup to set the focus into popup's contents correctly.
    evas_object_show(popup);
-   
-   //
+ 
    printf("FINGER to verify: %s\n", (const char*)data);
    fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, (const char*)data);
-   //
+
 }
 
 
@@ -437,12 +436,14 @@ fingerprint_clicked_finger_mode(void *data, Evas_Object *obj, void *event_info)
       {
             bt = elm_button_add(win);
             elm_object_text_set(bt, "verify");
+            evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
             evas_object_smart_callback_add(bt, "clicked", _verify_cb, fingername);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
             
             bt = elm_button_add(win);
             elm_object_text_set(bt, "delete");
+            evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
             evas_object_smart_callback_add(bt, "clicked", _delete_selected_cb, fingername);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
@@ -513,7 +514,7 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
    {
       eina_value_array_get(&array, i, &txt);
 
-      printf("\t%s:%s\n", txt, (const char*)data);
+//       printf("\t%s:%s\n", txt, (const char*)data);
       if(!strcmp(txt, (const char*)data))
          found = 1;
    }
@@ -522,12 +523,14 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
       {
             bt = elm_button_add(win);
             elm_object_text_set(bt, "verify");
+            evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
             evas_object_smart_callback_add(bt, "clicked", _verify_cb, data);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
             
             bt = elm_button_add(win);
             elm_object_text_set(bt, "delete");
+            evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
             evas_object_smart_callback_add(bt, "clicked", _delete_selected_cb, data);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
@@ -805,9 +808,6 @@ enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, El
       {
          eina_value_array_get(&array, i, &txt);
          edje_object_signal_emit(ly, "enrolled_finger", txt);
-
-         printf("\t%s\n", txt);
-         //TODO: Enrolled finger abspreichern, dass es beim Theme wechsel geladen werden kann
       }
    }
 }
@@ -908,8 +908,8 @@ _verify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
 {
    if(error)
    {
-      printf("MESSAGE _veriify_stopp_cb: %s\n", error->message);
-      printf("ERROR _veriify_stopp_cb: %s\n", error->error);
+      printf("MESSAGE _verify_stopp_cb: %s\n", error->message);
+      printf("ERROR _verify_stopp_cb: %s\n", error->error);
 
    }
 }
@@ -970,8 +970,8 @@ _verify_status(void *data, const Eldbus_Message *msg)
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "failed", "failed");
+      
       fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
-
       fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, currentfinger); //TODO: restart verify
    }   
    else if(!strcmp(status, "verify-no-match"))
@@ -980,8 +980,8 @@ _verify_status(void *data, const Eldbus_Message *msg)
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "failed", "failed");
+      
       fprint_device_verify_stop_call(new_proxy1, _verify_stopp_cb, NULL);
-
       fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, currentfinger); //TODO: restart verify
    }   
    else
