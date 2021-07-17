@@ -963,12 +963,25 @@ collections {
          }
    }
          program {
-         name: "enrolled__failed";
-         signal: "failed";
-         source: "*";
+         name: "enrolled_failed";
+         signal: "enrolled__failed";
+         source: "enrolled__failed";
          transition: LINEAR 0.2;
          action: STATE_SET "failed" 0.0;
          target: "0";
+   }
+         program {
+         name: "enrolled_failed1";
+         signal: "enrolled__failed";
+         source: "enrolled__failed";
+         transition: LINEAR 0.2;
+         action: STATE_SET "default" 0.0;
+         target: "1";
+         target: "2";
+         target: "3";
+         target: "4";
+         target: "5";
+         
    }
    }
 }
