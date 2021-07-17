@@ -103,6 +103,24 @@ _enroll_prop_get(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Pro
 }
 
 static void
+_verify_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   Evas_Object *popup;
+   
+   if(error)
+   {
+      printf("VERIFY _enroll_start_cb: %s\n", error->message);
+      printf("VERIFY _enroll_start_cb: %s\n", error->error);
+   
+      popup = data;
+      evas_object_del(popup);
+      popup = NULL;
+      //TODO: Auth fehler anzeigen
+      
+   }
+}
+
+static void
 _enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
 {
    Evas_Object *popup;
@@ -119,6 +137,87 @@ _enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
       
    }
 }
+
+
+static void
+_popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
+{
+   Evas_Object *popup, *box, *lb, *sep;
+   char buf[PATH_MAX];
+   char buf1[PATH_MAX];
+   const char *fingername;
+   
+   fingername = _to_readable_fingername(data);
+
+
+   popup = elm_popup_add(win);
+   elm_popup_scrollable_set(popup, EINA_FALSE);
+   evas_object_smart_callback_add(popup, "block,clicked", _close_enroll_popup, popup);
+   
+   box = elm_box_add(popup);
+   evas_object_show(box);
+   
+   lb = elm_label_add(box);
+   elm_object_text_set(lb, "Verify:");
+   evas_object_show(lb);
+   elm_box_pack_end(box, lb);
+   
+   snprintf(buf, sizeof(buf), "<bigger>%s</bigger>", fingername);
+   
+   lb = elm_label_add(box);
+   elm_object_text_set(lb, buf);
+   evas_object_show(lb);
+   elm_box_pack_end(box, lb);
+   
+   ly_popup = elm_layout_add(box);
+   snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
+   elm_layout_file_set(ly_popup, buf, "verify");
+   evas_object_size_hint_weight_set(ly_popup, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(ly_popup, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(ly_popup);
+   elm_box_pack_end(box, ly_popup);
+   
+   snprintf(buf1, sizeof(buf1), "please %s on device", device_type);
+   lb = elm_label_add(box);
+   elm_object_text_set(lb, buf1);
+   evas_object_show(lb);
+   elm_box_pack_end(box, lb);
+   
+   sep = elm_separator_add(box);
+   elm_separator_horizontal_set(sep, EINA_TRUE);
+   evas_object_size_hint_weight_set(sep, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(sep, EVAS_HINT_FILL, 0.0);
+   evas_object_show(sep);
+   elm_box_pack_end(box, sep);
+   
+   lb_status = elm_label_add(box);
+   elm_object_text_set(lb_status, "<color=white>waiting for enroll</color>"); //TODO: swipe or press auslesen
+   evas_object_show(lb_status);
+   elm_box_pack_end(box, lb_status);
+   
+   sep = elm_separator_add(box);
+   elm_separator_horizontal_set(sep, EINA_TRUE);
+   evas_object_size_hint_weight_set(sep, EVAS_HINT_EXPAND, 0.0);
+   evas_object_size_hint_align_set(sep, EVAS_HINT_FILL, 0.0);
+   evas_object_show(sep);
+   elm_box_pack_end(box, sep);
+      
+
+   elm_object_content_set(popup, box);
+
+   
+   
+   // popup show should be called after adding all the contents and the buttons
+   // of popup to set the focus into popup's contents correctly.
+   evas_object_show(popup);
+   
+   //
+   printf("FINGER to verify: %s\n", (const char*)data);
+   fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, (const char*)data);
+   //
+}
+
+
 
 static void
 _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
@@ -235,6 +334,13 @@ delete_all_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldb
    
 }
 
+static void
+_verify_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED,
+              void *event_info EINA_UNUSED)
+{
+   _popup_verify_cb(data, NULL);
+}
+
 
 static void
 _enroll_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED,
@@ -321,7 +427,7 @@ fingerprint_clicked_finger_mode(void *data, Evas_Object *obj, void *event_info)
       {
             bt = elm_button_add(win);
             elm_object_text_set(bt, "verify");
-      //    evas_object_smart_callback_add(bt, "clicked", _verify_cb, fingername);
+            evas_object_smart_callback_add(bt, "clicked", _verify_cb, fingername);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
             
@@ -404,7 +510,7 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
       {
             bt = elm_button_add(win);
             elm_object_text_set(bt, "verify");
-      //    evas_object_smart_callback_add(bt, "clicked", _verify_cb, data);
+            evas_object_smart_callback_add(bt, "clicked", _verify_cb, data);
             elm_box_pack_end(bx, bt);
             evas_object_show(bt);
             
@@ -502,7 +608,7 @@ _swallow_button()
 
    
    icon = elm_icon_add(win);
-   elm_image_file_set(icon, "/home/simon/CODING/e-fprint-gui/data/themes/images/1_5.svg", NULL);
+   elm_image_file_set(icon, NULL, NULL);
    evas_object_size_hint_weight_set(icon, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    evas_object_size_hint_align_set(icon, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(icon);
@@ -785,6 +891,69 @@ _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
    }
 }
 
+static void
+_verfify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   if(error)
+   {
+      printf("MESSAGE _enroll_stopp_cb: %s\n", error->message);
+      printf("ERROR _enroll_stopp_cb: %s\n", error->error);
+
+   }
+}
+
+
+static void
+_verfify_status(void *data, const Eldbus_Message *msg)
+{
+   const char *status;
+
+   char buf[PATH_MAX];
+   char buf1[PATH_MAX];
+   EINA_SAFETY_ON_TRUE_RETURN(eldbus_message_error_get(msg, NULL, NULL));
+
+   if (!eldbus_message_arguments_get(msg, "s", &status))
+     {
+        fprintf(stderr, "Error: could not get entry contents\n");
+        return;
+     }
+
+   snprintf(buf1, sizeof(buf1), "%i", enroll_count);
+   
+   if(!strcmp(status, "verify-match"))
+   {
+      snprintf(buf, sizeof(buf), "<color=green>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+      
+      edje_object_signal_emit(ly_popup, "success", "success");
+      
+      const char *layout;
+      elm_layout_file_get(ly_popup, NULL, &layout);
+      printf("LAYOUT %s\n", layout);
+
+      enroll_count++;
+   }
+   else if(!strcmp(status, "verify-no-match"))
+   {
+      snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
+      elm_object_text_set(lb_status, buf);
+      
+      edje_object_signal_emit(ly_popup, "failed", "failed");
+
+//       fprint_device_verify_start_call(new_proxy1, _verify_start_cb, NULL, "any"); //TODO: restart verify
+      enroll_count = 1;
+   }   
+   else
+   {
+      elm_object_text_set(lb_status, "<color=red>unknown error</color>");
+
+      edje_object_signal_emit(ly_popup, "failed", "failed");
+      enroll_count = 1;
+      
+      fprint_device_verify_stop_call(new_proxy1, _verfify_stopp_cb, NULL);
+   }
+}
+
 
 static void
 _enroll_status(void *data, const Eldbus_Message *msg)
@@ -912,6 +1081,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    printf("DEFAULT DEVICE %s\n\n", default_device);
    
    eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "EnrollStatus", _enroll_status, NULL);
+   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "VerifyStatus", _verfify_status, NULL);
    
 
    
@@ -1019,7 +1189,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    evas_object_show(sep);
    elm_box_pack_end(p_box, sep);
 
-   snprintf(buf1, sizeof(buf1), "User:: <color=white>%s</color>", currentuser);
+   snprintf(buf1, sizeof(buf1), "User: <color=white>%s</color>", currentuser);
    
    lb2 = elm_label_add(panel);
    elm_object_text_set(lb2, buf1);

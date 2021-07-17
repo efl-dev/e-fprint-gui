@@ -985,3 +985,55 @@ collections {
    }
    }
 }
+
+
+   group { "verify";
+      images {
+         image: "1_0.svg" COMP;
+      }
+      parts {
+         image { "0";
+            scale: 1;
+            desc { "default";
+               min: 140 140;
+               max: 140 140;
+               visible: 1;
+               image.normal: "1_0.svg";
+            }
+            desc { "success";
+               inherit: "default";
+               visible: 1;
+               color: 00 255 0 255;
+            }
+            desc { "failed";
+               inherit: "default";
+               visible: 1;
+               color: 255 0 0 255;
+            }
+         }
+   programs {
+         program {
+         name: "verify";
+         signal: "success";
+         source: "success";
+         transition: LINEAR 0.2;
+         action: STATE_SET "success" 0.0;
+         target: "0";
+   }
+         program {
+         name: "reset";
+         transition: ACCEL 2.0;
+         action: STATE_SET "default" 0.0;
+         target: "0";
+   }
+         program {
+         name: "no_verify";
+         signal: "failed";
+         source: "failed";
+         transition: LINEAR 0.2;
+         action: STATE_SET "failed" 0.0;
+         target: "0";
+         after: "reset";
+   }
+
+   }
