@@ -23,12 +23,48 @@ Eldbus_Pending *p1;
 Evas_Object *ly;
 Evas_Object *win;
 
-const char *default_device;
+const char *default_device = NULL;
+const char *device_type = NULL;
+
+Eina_Value array;
+
 
 static void enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args);
 static void _swallow_button();
 static void claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 
+
+const char*
+_to_readable_fingername(void *data)
+{
+   const char *name;
+   Eina_Strbuf *buffer = eina_strbuf_new();
+   
+   eina_strbuf_append(buffer, (const char*)data);
+   eina_strbuf_replace_all(buffer, "-", " ");
+   eina_strbuf_replace(buffer, "right", "Right", 1);
+   eina_strbuf_replace(buffer, "left", "Left", 1);
+   name = eina_strbuf_string_get(buffer);
+//    eina_strbuf_reset(buffer);
+   
+   return name;
+}
+
+const char*
+_to_fprint_fingername(const char *data)
+{
+   const char *name;
+   Eina_Strbuf *buffer = eina_strbuf_new();
+   
+   eina_strbuf_append(buffer, (const char*)data);
+   eina_strbuf_replace_all(buffer, " ", "-");
+   eina_strbuf_replace(buffer, "Right", "right", 1);
+   eina_strbuf_replace(buffer, "Left", "left", 1);
+   name = eina_strbuf_string_get(buffer);
+//    eina_strbuf_reset(buffer);
+   printf("FINGERNAME LIST FPRINT FINGERNAME0: %s\n", name);
+   return name;
+}
 
 static void
 cancel_enroll(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
@@ -41,10 +77,11 @@ cancel_enroll(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_E
 }
 
 static void
-_response_cb(void *data EINA_UNUSED, Evas_Object *obj, void *event_info EINA_UNUSED)
+_close_enroll_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
-//    Evas_Object *popup = data;
-   evas_object_del(obj);
+   Evas_Object *popup = data;
+   evas_object_del(popup);
+   popup = NULL;
    fprint_device_enroll_stop_call(new_proxy1, cancel_enroll, NULL);
 }
 
@@ -53,20 +90,23 @@ _dismiss_hover(void *data, Evas_Object *obj EINA_UNUSED,
                void *event_info EINA_UNUSED)
 {
    Evas_Object *hv = data;
-
-   printf("TEST\n");
    elm_hover_dismiss(hv);
 }
 
 static void
 _enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
 {
+   Evas_Object *popup;
+   
    if(error)
    {
       printf("START ENROLL: %s\n", error->message);
       printf("START ENROLL: %s\n", error->error);
    
-//       evas_object_del(data);
+      popup = data;
+      evas_object_del(popup);
+      popup = NULL;
+      
       //TODO: Auth fehler anzeigen
    }
 }
@@ -75,12 +115,16 @@ static void
 _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
 {
    Evas_Object *popup, *box, *lb, *sep, *ly;
+   char buf[PATH_MAX];
+   char buf1[PATH_MAX];
+   const char *fingername;
+   
+   fingername = _to_readable_fingername(data);
+
 
    popup = elm_popup_add(win);
    elm_popup_scrollable_set(popup, EINA_FALSE);
-   elm_object_text_set(popup, "Roll or swipe 5 times");
-//    elm_popup_timeout_set(popup, 3.0);
-   evas_object_smart_callback_add(popup, "block,clicked", _response_cb, popup);
+   evas_object_smart_callback_add(popup, "block,clicked", _close_enroll_popup, popup);
    
    box = elm_box_add(popup);
    evas_object_show(box);
@@ -90,8 +134,7 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    evas_object_show(lb);
    elm_box_pack_end(box, lb);
    
-   char buf[PATH_MAX];
-   snprintf(buf, sizeof(buf), "<bigger>%s</bigger>", data);
+   snprintf(buf, sizeof(buf), "<bigger>%s</bigger>", fingername);
    
    lb = elm_label_add(box);
    elm_object_text_set(lb, buf);
@@ -105,11 +148,10 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    evas_object_size_hint_align_set(ly, EVAS_HINT_FILL, EVAS_HINT_FILL);
    evas_object_show(ly);
    elm_box_pack_end(box, ly);
-         
-   Evas_Object *edje_obj = elm_layout_edje_get(ly);
-
+   
+   snprintf(buf1, sizeof(buf1), "%s 5 times", device_type);
    lb = elm_label_add(box);
-   elm_object_text_set(lb, "Press or swipe 5 times"); //TODO: swipe or press auslesen
+   elm_object_text_set(lb, buf1);
    evas_object_show(lb);
    elm_box_pack_end(box, lb);
    
@@ -146,10 +188,45 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    evas_object_show(popup);
    
    //
-   fprint_device_enroll_start_call(new_proxy1, _enroll_start_cb, popup, "right-middle-finger");
+   printf("FINGER to enroll: %s\n", (const char*)data);
+   fprint_device_enroll_start_call(new_proxy1, _enroll_start_cb, popup, (const char*)data);
    //
 }
 
+static void
+delete_selected_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+   if(error)
+   {
+      printf("DELETE ENROLL: %s\n", error->message);
+      printf("DELETE ENROLL: %s\n", error->error);
+   }
+}
+
+static void
+delete_all_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
+{
+//    const char *layout;
+//    char buf[PATH_MAX];
+  
+   if(error)
+   {
+      printf("DELETE ENROLL: %s\n", error->message);
+      printf("DELETE ENROLL: %s\n", error->error);
+   }
+   
+//    snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
+//    elm_layout_file_get(ly, NULL, &layout);
+//    printf("layout: %s\n", layout);
+//    elm_layout_file_set(ly, buf, layout);
+   
+   //TODO finger im theme auf default (nicht enrolled) setzen
+   edje_object_signal_emit(ly, "reset_finger", "reset_finger");
+//    fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, "simon");
+   
+   // TODO _dismiss_hover
+   
+}
 
 
 static void
@@ -159,14 +236,30 @@ _enroll_cb(void *data EINA_UNUSED, Evas_Object *obj EINA_UNUSED,
    _popup_enroll_cb(data, NULL);
 }
 
+static void
+_delete_selected_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   fprint_device_delete_enrolled_finger_call(new_proxy1, delete_selected_finger, NULL, data);
+}
+
+static void
+_delete_all_cb(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNUSED)
+{
+   fprint_device_delete_enrolled_fingers2_call(new_proxy1, delete_all_finger, NULL);
+}
+
 void
 fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
 {
    Evas_Object *hv, *bt, *bx, *lb;
    char buf[PATH_MAX];
    const char *layout;
+   const char *fingername;
+   const char *txt;
+   int i, found = 0;
    
-   snprintf(buf, sizeof(buf), "<color=white>%s</color>", data);
+   fingername = _to_readable_fingername(data);
+   snprintf(buf, sizeof(buf), "<color=white>%s</color>", fingername);
    
    hv = elm_hover_add(win);
 
@@ -179,8 +272,7 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
       elm_object_part_content_set(hv, "middle", bx);
    else
       elm_object_part_content_set(hv, "bottom", bx);
-      
-      
+
    evas_object_show(bx);
    
    lb = elm_label_add(bx);
@@ -188,28 +280,44 @@ fingerprint_clicked(void *data, Evas_Object *obj, void *event_info)
    evas_object_show(lb);
    elm_box_pack_end(bx, lb);
 
-   bt = elm_button_add(win);
-   elm_object_text_set(bt, "enroll");
-   evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
-   evas_object_smart_callback_add(bt, "clicked", _enroll_cb, data);
-   elm_box_pack_end(bx, bt);
-   evas_object_show(bt);
-
-   bt = elm_button_add(win);
-   elm_object_text_set(bt, "verify");
-//    evas_object_smart_callback_add(bt, "clicked", my_hover_bt, hv);
-   elm_box_pack_end(bx, bt);
-   evas_object_show(bt);
    
-   bt = elm_button_add(win);
-   elm_object_text_set(bt, "delete");
-//    evas_object_smart_callback_add(bt, "clicked", my_hover_bt, hv);
-   elm_box_pack_end(bx, bt);
-   evas_object_show(bt);
+   for (i = 0; i < eina_value_array_count(&array); i++)
+   {
+      eina_value_array_get(&array, i, &txt);
+
+      printf("\t%s:%s\n", txt, (const char*)data);
+      if(!strcmp(txt, (const char*)data))
+         found = 1;
+   }
+   
+      if(found == 1)
+      {
+            bt = elm_button_add(win);
+            elm_object_text_set(bt, "verify");
+      //    evas_object_smart_callback_add(bt, "clicked", _verify_cb, data);
+            elm_box_pack_end(bx, bt);
+            evas_object_show(bt);
+            
+            bt = elm_button_add(win);
+            elm_object_text_set(bt, "delete");
+            evas_object_smart_callback_add(bt, "clicked", _delete_selected_cb, data);
+            elm_box_pack_end(bx, bt);
+            evas_object_show(bt);
+      }
+      else
+      {
+            bt = elm_button_add(win);
+            elm_object_text_set(bt, "enroll");
+            evas_object_smart_callback_add(bt, "clicked", _dismiss_hover, hv);
+            evas_object_smart_callback_add(bt, "clicked", _enroll_cb, data);
+
+            elm_box_pack_end(bx, bt);
+            evas_object_show(bt);
+      }
    
    bt = elm_button_add(win);
    elm_object_text_set(bt, "delete all");
-//    evas_object_smart_callback_add(bt, "clicked", my_hover_bt, hv);
+   evas_object_smart_callback_add(bt, "clicked", _delete_all_cb, hv);
    elm_box_pack_end(bx, bt);
    evas_object_show(bt);
    
@@ -231,73 +339,115 @@ _switch_hand(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNU
    _swallow_button();
 }
 
+
+static void
+_finger_mode_select(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
+{
+   const char *txt, *fingername;
+   unsigned i;
+   
+   const Eina_List *l, *items;
+   Elm_Object_Item *list_it, *selected_item;
+   
+   items = elm_list_items_get(data);
+   
+   EINA_LIST_FOREACH(items, l, list_it)
+   {
+      elm_list_item_selected_set(list_it, EINA_FALSE);
+   }
+   
+   selected_item = elm_list_selected_item_get(obj);
+   
+   printf("FINGERNAME LIST FPRINT FINGERNAME1: %s\n", elm_object_item_text_get(selected_item));
+   
+   fingername = _to_fprint_fingername(elm_object_item_text_get(selected_item));
+
+   printf("FINGERNAME LIST FPRINT FINGERNAME: %s\n", fingername);
+   
+   for (i = 0; i < eina_value_array_count(&array); i++)
+   {
+      eina_value_array_get(&array, i, &txt);
+
+      printf("\t%s:%s\n", txt, "right-index-finger");
+      if(!strcmp(txt, fingername))
+         edje_object_signal_emit(ly, "enrolled_finger", "enrolled_finger");
+      else
+         edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger");
+   }
+}
+
 static void
 _swallow_button()
 {
-   Evas_Object *swallow_button, *right_list, *left_list, *leftright_list;
-   Elm_Object_Item *it;
+   Evas_Object *swallow_button, *right_list = NULL, *left_list, *leftright_list, *icon;
 
+   
+   icon = elm_icon_add(win);
+   elm_image_file_set(icon, "/home/simon/CODING/e-fprint-gui/data/themes/images/1_5.svg", NULL);
+   evas_object_size_hint_weight_set(icon, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(icon, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(icon);
+   
    // ALL 10 FINGERS
-
    // LEFT
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left little finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "left-little-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-little-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left ring finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "left-ring-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-ring-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left middle finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "left-middle-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-middle-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left index finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "left-index-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-index-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Left thumb");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "left-thumb");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_left-thumb", swallow_button);
    
    // RIGHT
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right little finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "right-little-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_right-little-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right ring finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "right-ring-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_right-ring-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right middle finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "right-middle-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_right-middle-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right index finger");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "right-index-finger");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_right-index-finger", swallow_button);
    
    swallow_button = elm_button_add(win);
    elm_object_style_set(swallow_button, "blank");
-   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "Right thumb");
+   evas_object_smart_callback_add(swallow_button, "clicked", fingerprint_clicked, "right-thumb");
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_right-thumb", swallow_button);
    
@@ -308,8 +458,7 @@ _swallow_button()
    evas_object_size_hint_weight_set(leftright_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
       
    elm_list_mode_set(leftright_list, ELM_LIST_EXPAND);
-   it = elm_list_item_append(leftright_list, "Left Hand", NULL, NULL, _switch_hand, "left_hand");
-//    elm_list_item_selected_set(it, EINA_TRUE);
+   elm_list_item_append(leftright_list, "Left Hand", NULL, NULL, _switch_hand, "left_hand");
    elm_list_item_append(leftright_list, "Right Hand", NULL, NULL, _switch_hand, "right_hand");
    evas_object_show(leftright_list);
    elm_object_part_content_set(ly, "swallow_hand_switch", leftright_list);
@@ -321,16 +470,24 @@ _swallow_button()
    elm_list_multi_select_set(left_list, EINA_FALSE);
    elm_list_select_mode_set(left_list, ELM_OBJECT_MULTI_SELECT_MODE_DEFAULT);
    evas_object_size_hint_weight_set(left_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-      
    elm_list_mode_set(left_list, ELM_LIST_EXPAND);
-   elm_list_item_append(left_list, "Left little finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(left_list, "Left middle finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(left_list, "Left index finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(left_list, "Left ring finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(left_list, "Left thumb", NULL, NULL, NULL, NULL);
-//    evas_object_smart_callback_add(left_list, "clicked", fingerprint_clicked, "Left thumb");
+   
+   right_list = elm_list_add(win);
+   elm_list_multi_select_set(right_list, EINA_FALSE);
+   elm_list_select_mode_set(right_list, ELM_OBJECT_MULTI_SELECT_MODE_DEFAULT);
+   evas_object_size_hint_weight_set(right_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   elm_list_mode_set(right_list, ELM_LIST_EXPAND);
+   
+   
+   
+   elm_list_item_append(left_list, "Left little finger", NULL, NULL, _finger_mode_select, right_list);
+   elm_list_item_append(left_list, "Left ring finger", NULL, NULL, _finger_mode_select, right_list);
+   elm_list_item_append(left_list, "Left middle finger", NULL, NULL, _finger_mode_select, right_list);
+   elm_list_item_append(left_list, "Left index finger", NULL, NULL, _finger_mode_select, right_list);
+   elm_list_item_append(left_list, "Left thumb", NULL, NULL, _finger_mode_select, right_list);
+   elm_list_go(left_list);
    evas_object_show(left_list);
-   elm_object_part_content_set(ly, "swallow_select-finger-right", left_list);
+   elm_object_part_content_set(ly, "swallow_select-finger-left", left_list);
    
    
    
@@ -340,16 +497,15 @@ _swallow_button()
    evas_object_show(swallow_button);
    elm_object_part_content_set(ly, "swallow_select-finger", swallow_button);
    
-   right_list = elm_list_add(win);
-   elm_list_mode_set(right_list, ELM_LIST_EXPAND);
-   elm_list_item_append(right_list, "Right little finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(right_list, "Right middle finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(right_list, "Right index finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(right_list, "Right ring finger", NULL, NULL, NULL, NULL);
-   elm_list_item_append(right_list, "Right thumb", NULL, NULL, NULL, NULL);
-//    evas_object_smart_callback_add(right_list, "clicked", fingerprint_clicked, "Left thumb");
+   elm_list_item_append(right_list, "Right little finger", NULL, NULL, _finger_mode_select, left_list);
+   elm_list_item_append(right_list, "Right ring finger", NULL, NULL, _finger_mode_select, left_list);
+   elm_list_item_append(right_list, "Right middle finger", NULL, NULL, _finger_mode_select, left_list);
+   elm_list_item_append(right_list, "Right index finger", icon, NULL, _finger_mode_select, left_list);
+   elm_list_item_append(right_list, "Right thumb", NULL, NULL, _finger_mode_select, left_list);
+   elm_list_go(right_list);
    evas_object_show(right_list);
-   elm_object_part_content_set(ly, "swallow_select-finger-left", right_list);
+   elm_object_part_content_set(ly, "swallow_select-finger-right", right_list);
+
 }
 
 static void _select_mode(void *data, Evas_Object *obj, void *event_info)
@@ -363,7 +519,7 @@ static void _select_mode(void *data, Evas_Object *obj, void *event_info)
 }
 
 ///////////
-
+/*
 static void
 get_devices(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args)
 {
@@ -372,7 +528,7 @@ get_devices(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Err
       printf("ERROR: %s\n", error->error);
    if(error)
    printf("MESSAGE: %s\n", error->message);
-}
+}*/
 
 static void
 get_default_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, const char *device)
@@ -387,7 +543,6 @@ get_default_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eld
 static void
 enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args)
 {
-   Eina_Value *v, array;
    const char *txt;
    unsigned i;
    
@@ -397,18 +552,18 @@ enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, El
       printf("MESSAGE: %s\n", error->message);
    }else
    {
+      
+      eina_value_flush(&array);
       eina_value_struct_value_get(args, "arg0", &array);
       for (i = 0; i < eina_value_array_count(&array); i++)
       {
          eina_value_array_get(&array, i, &txt);
-         edje_object_signal_emit(ly, "enroll_rif", txt);
+         edje_object_signal_emit(ly, "enrolled_finger", txt);
+
          printf("\t%s\n", txt);
          //TODO: Enrolled finger abspreichern, dass es beim Theme wechsel geladen werden kann
       }
-      eina_value_flush(&array);
    }
-   
-
 }
 
 
@@ -425,7 +580,7 @@ get_device_proberties(void *data, Eldbus_Pending *p, const char *propname, Eldbu
       elm_object_text_set(lb, buf);
    }
    else
-      elm_object_text_set(lb, "NO NAME");
+      elm_object_text_set(lb, "NO DEVICE");
 }
 
 static void
@@ -436,12 +591,12 @@ get_device_type(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Prox
 
    if(value)
    {
-      printf("Type: %s\n", value);
-      snprintf(buf, sizeof(buf), "Device Type: <color=white>%s</color>", value);
+      device_type = strdup(value);
+//       device_type = (char *)value;
+      printf("Type: %s\n", device_type);
+      snprintf(buf, sizeof(buf), "Device Type: <color=white>%s</color>", device_type);
       elm_object_text_set(lb1, buf);
    }
-   else
-      elm_object_text_set(lb1, "NO NAME");
 }
 
 static void
@@ -469,14 +624,14 @@ claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Er
       bx = elm_box_add(notify);
 
       o = elm_label_add(bx);
-      elm_object_text_set(o, gettext("Could not claim device<br>Please cancel all other fprint sessions<br>and press retry<br>"));
+      elm_object_text_set(o, "Could not claim device<br>Please cancel all other fprint sessions<br>and press retry<br>");
       evas_object_show(o);
       elm_box_pack_end(bx, o);
       
       bxv = elm_box_add(notify);
 
       o = elm_button_add(bxv);
-      elm_object_text_set(o, gettext("retry"));
+      elm_object_text_set(o, "retry");
       evas_object_smart_callback_add(o, "clicked", retry_claim_device, notify);
       evas_object_show(o);
       elm_box_pack_end(bxv, o);
@@ -545,7 +700,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
       
    win = elm_win_util_standard_add("e-fprint-gui", "e-fprint-gui Information");
       
-   elm_win_title_set(win, gettext("Fingerprint Configuration (e-fprint-gui)"));
+   elm_win_title_set(win, "Fingerprint Configuration (e-fprint-gui)");
    elm_win_autodel_set(win, EINA_TRUE);
       
    box = elm_box_add(win);
@@ -587,7 +742,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    elm_hoversel_auto_update_set(hv, EINA_TRUE);
    elm_hoversel_hover_parent_set(hv, win);
    elm_hoversel_item_add(hv, "Both hands", NULL, ELM_ICON_NONE, _select_mode, "hands");
-   elm_hoversel_item_add(hv, "One hand", NULL, ELM_ICON_NONE, _select_mode, "left_hand");
+   elm_hoversel_item_add(hv, "One hand", NULL, ELM_ICON_NONE, _select_mode, "right_hand");
    elm_hoversel_item_add(hv, "One finger", NULL, ELM_ICON_NONE, _select_mode, "finger");
    evas_object_show(hv);
    elm_box_pack_end(h_box, hv);
