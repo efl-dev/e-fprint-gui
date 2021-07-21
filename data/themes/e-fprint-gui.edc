@@ -1011,6 +1011,7 @@ collections {
                color: 255 0 0 255;
             }
          }
+      }
    programs {
          program {
          name: "reset1";
@@ -1042,5 +1043,26 @@ collections {
          target: "0";
          after: "reset";
    }
-
    }
+   }
+   
+   
+
+   group { "icon";
+      images {
+         image: "1_0.svg" COMP;
+      }
+      parts {
+         image { "0";
+            scale: 1;
+            desc { "default";
+//                min: 140 140;
+//                max: 140 140;
+               visible: 1;
+               image.normal: "1_0.svg";
+               color: 00 255 0 255;
+            }
+         }
+      }
+   }
+
