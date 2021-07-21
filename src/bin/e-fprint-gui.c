@@ -1090,7 +1090,7 @@ e_auth_shutdown(void)
 EAPI_MAIN int
 elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
 {
-   Evas_Object *box, *lb, *lb1, *lb2,*lb3, *h_box, *panel, *hv, *p_box, *sep;
+   Evas_Object *box, *lb, *lb1, *lb2, *h_box, *panel, *hv, *p_box, *sep;
    
    char buf[PATH_MAX];
    char buf1[PATH_MAX];
@@ -1126,14 +1126,13 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    default_device = "/net/reactivated/Fprint/Device/0";
    printf("DEFAULT DEVICE %s\n\n", default_device);
    
-   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "EnrollStatus", _enroll_status, NULL);
-   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "VerifyStatus", _verify_status, NULL);
-   
-
-   
    new_proxy1 = fprint_device_proxy_get(conn, "net.reactivated.Fprint", default_device);
    
    fprint_device_claim_call(new_proxy1, claim_device, NULL, currentuser);
+
+   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "EnrollStatus", _enroll_status, NULL);
+   eldbus_signal_handler_add(conn, "net.reactivated.Fprint", default_device, "net.reactivated.Fprint.Device", "VerifyStatus", _verify_status, NULL);
+
    
 //    p = fprint_manager_get_devices_call(new_proxy, get_devices, NULL);
    
@@ -1242,17 +1241,6 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    evas_object_show(lb2);
    elm_box_pack_end(p_box, lb2);
    
-   sep = elm_separator_add(panel);
-   elm_separator_horizontal_set(sep, EINA_FALSE);
-   evas_object_show(sep);
-   elm_box_pack_end(p_box, sep);
-
-   snprintf(buf1, sizeof(buf1), "Version: <color=white>libfprint 1.92.0</color>", currentuser);
-   
-   lb3 = elm_label_add(panel);
-   elm_object_text_set(lb3, buf1);
-   evas_object_show(lb3);
-   elm_box_pack_end(p_box, lb3);
    
    elm_object_content_set(panel, p_box);
    
