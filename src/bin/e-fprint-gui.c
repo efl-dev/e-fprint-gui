@@ -30,6 +30,7 @@ const char *device_type = NULL;
 const char *currentuser;
 const char *currentfinger;
 int enroll_count = 1;
+int enroll_num = 1;
 
 Eina_Value array;
 
@@ -108,8 +109,7 @@ _enroll_prop_get(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Pro
       printf("ERROR _enroll_prop_get: %s\n", error_info->error);
 
    }
-   printf("VALUE %i\n", value);
-   printf("PROP NAME %s\n", propname);
+   enroll_num = value;
 }
 
 static void
@@ -314,13 +314,17 @@ delete_selected_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending,
       printf("MESSAGE delete_selected_finger: %s\n", error->message);
       printf("ERROR delete_selected_finger: %s\n", error->error);
    }
+   
+   edje_object_signal_emit(ly, "reset_finger", "reset_finger"); // for GROUP hands/left_hand/right/hand
+   edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger"); // for GROUP finger
+   fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
+   
+   _dismiss_hover(data, NULL, NULL);
 }
 
 static void
 delete_all_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error)
 {
-//    const char *layout;
-//    char buf[PATH_MAX];
   
    if(error)
    {
@@ -328,12 +332,6 @@ delete_all_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldb
       printf("ERROR delete_all_finger: %s\n", error->error);
    }
    
-//    snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
-//    elm_layout_file_get(ly, NULL, &layout);
-//    printf("layout: %s\n", layout);
-//    elm_layout_file_set(ly, buf, layout);
-   
-   //TODO finger im theme auf default (nicht enrolled) setzen
    edje_object_signal_emit(ly, "reset_finger", "reset_finger"); // for GROUP hands/left_hand/right/hand
    edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger"); // for GROUP finger
    fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
@@ -579,7 +577,6 @@ _finger_mode_select(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 {
    const char *txt, *fingername;
    unsigned i;
-   
    const Eina_List *l, *items;
    Elm_Object_Item *list_it, *selected_item;
    
@@ -611,9 +608,6 @@ _finger_mode_select(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 
       edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger");
    }
-   
-//    if(eina_value_array_count(&array) == 0)
-//       edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger");
 }
 
 static void
@@ -621,12 +615,8 @@ _swallow_button()
 {
    Evas_Object *swallow_button, *right_list = NULL, *left_list, *leftright_list, *icon;
 
-   
-   icon = elm_icon_add(win);
-   elm_image_file_set(icon, NULL, NULL);
-   evas_object_size_hint_weight_set(icon, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-   evas_object_size_hint_align_set(icon, EVAS_HINT_FILL, EVAS_HINT_FILL);
-   evas_object_show(icon);
+   char buf[PATH_MAX];
+
    
    // ALL 10 FINGERS
    // LEFT
@@ -718,7 +708,14 @@ _swallow_button()
    evas_object_size_hint_weight_set(right_list, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
    elm_list_mode_set(right_list, ELM_LIST_EXPAND);
    
+   icon = elm_icon_add(win);
+   snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
+   elm_image_file_set(icon, buf, "icon");
+   evas_object_size_hint_weight_set(icon, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+   evas_object_size_hint_align_set(icon, EVAS_HINT_FILL, EVAS_HINT_FILL);
+   evas_object_show(icon);
    
+
    
    elm_list_item_append(left_list, "Left little finger", NULL, NULL, _finger_mode_select, right_list);
    elm_list_item_append(left_list, "Left ring finger", NULL, NULL, _finger_mode_select, right_list);
@@ -976,7 +973,7 @@ _verify_status(void *data, const Eldbus_Message *msg)
    }   
    else if(!strcmp(status, "verify-no-match"))
    {
-      snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
+      snprintf(buf, sizeof(buf), "<color=red>%s</color><br>retry", status);
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "failed", "failed");
@@ -998,6 +995,7 @@ _verify_status(void *data, const Eldbus_Message *msg)
 static void
 _enroll_status(void *data, const Eldbus_Message *msg)
 {
+   //TODO: Theme an die Anzahl der verlangten enrolls anpassen. Theme = 5, 
    const char *status;
 
    char buf[PATH_MAX];
@@ -1014,7 +1012,7 @@ _enroll_status(void *data, const Eldbus_Message *msg)
    
    if(!strcmp(status, "enroll-stage-passed"))
    {
-      snprintf(buf, sizeof(buf), "<color=green>%s</color>", status);
+      snprintf(buf, sizeof(buf), "<color=green>%s<br>%i/%i</color>", status, enroll_count, enroll_num);
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "success", buf1);
@@ -1080,11 +1078,19 @@ _enroll_status(void *data, const Eldbus_Message *msg)
    }
 }
 
+int
+e_auth_shutdown(void)
+{
+   if (conn) eldbus_connection_unref(conn);
+      conn = NULL;
+		return 1;
+}
+
    
 EAPI_MAIN int
 elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
 {
-   Evas_Object *box, *lb, *lb1, *lb2, *h_box, *panel, *hv, *p_box, *sep;
+   Evas_Object *box, *lb, *lb1, *lb2,*lb3, *h_box, *panel, *hv, *p_box, *sep;
    
    char buf[PATH_MAX];
    char buf1[PATH_MAX];
@@ -1145,7 +1151,7 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    
       
    win = elm_win_util_standard_add("e-fprint-gui", "e-fprint-gui Information");
-      
+      elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
    elm_win_title_set(win, "Fingerprint Configuration (e-fprint-gui)");
    elm_win_autodel_set(win, EINA_TRUE);
       
@@ -1236,6 +1242,18 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    evas_object_show(lb2);
    elm_box_pack_end(p_box, lb2);
    
+   sep = elm_separator_add(panel);
+   elm_separator_horizontal_set(sep, EINA_FALSE);
+   evas_object_show(sep);
+   elm_box_pack_end(p_box, sep);
+
+   snprintf(buf1, sizeof(buf1), "Version: <color=white>libfprint 1.92.0</color>", currentuser);
+   
+   lb3 = elm_label_add(panel);
+   elm_object_text_set(lb3, buf1);
+   evas_object_show(lb3);
+   elm_box_pack_end(p_box, lb3);
+   
    elm_object_content_set(panel, p_box);
    
    elm_box_pack_end(box, panel);
@@ -1244,6 +1262,9 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    elm_win_resize_object_add(win, box);
 
    elm_run();
+   
+   if (conn) eldbus_connection_unref(conn);
+   conn = NULL;
 
    return 0;
 }
