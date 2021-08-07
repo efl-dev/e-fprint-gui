@@ -29,8 +29,10 @@ const char *default_device = NULL;
 const char *device_type = NULL;
 const char *currentuser;
 const char *currentfinger;
-int enroll_count = 1;
-int enroll_num = 1;
+double enroll_count = 0.0;
+int enroll_num;
+int step = 1;
+double enroll_count_value;
 
 Eina_Value array;
 
@@ -130,8 +132,13 @@ _enroll_prop_get(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Pro
       printf("MESSAGE _enroll_prop_get: %s\n", error_info->message);
       printf("ERROR _enroll_prop_get: %s\n", error_info->error);
       //TODO: display the error
-   }else
+   }else{
       enroll_num = value;
+      enroll_count_value = 10 / (double)enroll_num;
+//       enroll_count = enroll_count_value;
+//    printf("enroll_num: %i\n", enroll_num);
+//    printf("COUNT: %f\n", enroll_count_value);
+   }
 }
 
 
@@ -1127,38 +1134,61 @@ _enroll_status(void *data, const Eldbus_Message *msg)
         return;
      }
 
-   snprintf(buf1, sizeof(buf1), "%i", enroll_count);
+   snprintf(buf1, sizeof(buf1), "%i", step);
    
    if(!strcmp(status, "enroll-stage-passed"))
    {
-      snprintf(buf, sizeof(buf), "<color=green>Enroll %i of %i<br>%s</color>", enroll_count, enroll_num, status);
+      snprintf(buf, sizeof(buf), "<color=green>Enroll %i of %i<br>%s</color>", step, enroll_num, status);
       elm_object_text_set(lb_status, buf); //FIXME lb_status ist nicht mehr vorhanden wenn über block,clicked das popup gelöscht worden ist.
       
-      edje_object_signal_emit(ly_popup, "success", buf1);
+      enroll_count = enroll_count + enroll_count_value;
+      
+//       edje_object_signal_emit(ly_popup, "success", buf1);
+      if(enroll_count <= 4)
+         edje_object_signal_emit(ly_popup, "success", "1");
+      else if(enroll_count >= 4 && (enroll_count <= 6))
+         edje_object_signal_emit(ly_popup, "success", "2");
+      else if(enroll_count >= 6 && (enroll_count <= 8))
+         edje_object_signal_emit(ly_popup, "success", "3");
+      else if(enroll_count >= 8 && (enroll_count <= 10))
+         edje_object_signal_emit(ly_popup, "success", "4");
+      else if(enroll_count >= 10)
+         edje_object_signal_emit(ly_popup, "success", "5");
       
       const char *layout;
       elm_layout_file_get(ly_popup, NULL, &layout);
       printf("LAYOUT %s\n", layout);
+      
+      step++;
 
-      enroll_count++;
    }
    else if(!strcmp(status, "enroll-completed"))
    {
 //       snprintf(buf, sizeof(buf), "<color=green>%s</color>", status);
-      snprintf(buf, sizeof(buf), "<color=green>Enroll %i of %i<br>%s</color>", enroll_count, enroll_num, status);
+      snprintf(buf, sizeof(buf), "<color=green>Enroll %i of %i<br>%s</color>", step, enroll_num, status);
       elm_object_text_set(lb_status, buf);
       
-//       edje_object_signal_emit(ly_popup, "success", buf1);
+      edje_object_signal_emit(ly_popup, "success", "5");
       fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
       enroll_count = 1;
    }   
    else if(!strcmp(status, "enroll-swipe-too-short") || !strcmp(status, "enroll-retry-scan") || !strcmp(status, "enroll-finger-not-centered") || !strcmp(status, "enroll-remove-and-retry") || !strcmp(status, "enroll-remove-and-retry"))
    {
 //       snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
-      snprintf(buf, sizeof(buf), "<color=red>Enroll %i of %i<br>%s</color>", enroll_count, enroll_num, status);
+      snprintf(buf, sizeof(buf), "<color=red>Enroll %i of %i<br>%s</color>", step, enroll_num, status);
       elm_object_text_set(lb_status, buf);
       
-      edje_object_signal_emit(ly_popup, "failed", buf1);
+//       edje_object_signal_emit(ly_popup, "failed", buf1);
+      if(enroll_count <= 4)
+         edje_object_signal_emit(ly_popup, "failed", "1");
+      else if(enroll_count >= 4 && (enroll_count <= 6))
+         edje_object_signal_emit(ly_popup, "failed", "2");
+      else if(enroll_count >= 6 && (enroll_count <= 8))
+         edje_object_signal_emit(ly_popup, "failed", "3");
+      else if(enroll_count >= 8 && (enroll_count <= 10))
+         edje_object_signal_emit(ly_popup, "failed", "4");
+      else if(enroll_count >= 10)
+         edje_object_signal_emit(ly_popup, "failed", "5");
 
    }
    else if(!strcmp(status, "enroll-failed"))
@@ -1166,7 +1196,8 @@ _enroll_status(void *data, const Eldbus_Message *msg)
       elm_object_text_set(lb_status, "<color=red>enroll failed</color>");
 
       edje_object_signal_emit(ly_popup, "failed", buf1); // FIXME ly_popup ist nicht mehr vorhanden wenn über block,clicked das popup gelöscht worden ist.
-      enroll_count = 1;
+//       enroll_count = 1;
+      step = 1;
       
       fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
@@ -1184,7 +1215,8 @@ _enroll_status(void *data, const Eldbus_Message *msg)
       elm_object_text_set(lb_status, "<color=red>enroll.data full<br> No further prints can be enrolled on this device</color>");
 
       edje_object_signal_emit(ly_popup, "enrolled__failed", "enrolled__failed");
-      enroll_count = 1;
+//       enroll_count = 1;
+      step = 1;
       
       fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
@@ -1197,20 +1229,6 @@ _enroll_status(void *data, const Eldbus_Message *msg)
       
       fprint_device_enroll_stop_call(new_proxy1, _enroll_stopp_cb, NULL);
    }
-   
-//    printf("COUNT: %.2f\n", enroll_count);
-   
-//    if(enroll_count <= 2)
-//       edje_object_signal_emit(ly_popup, "success", "1");
-//    else if(enroll_count == 2 && (enroll_count <= 4))
-//       edje_object_signal_emit(ly_popup, "success", "2");
-//    else if(enroll_count == 4 && (enroll_count <= 6))
-//       edje_object_signal_emit(ly_popup, "success", "3");
-//    else if(enroll_count == 6 && (enroll_count <= 8))
-//       edje_object_signal_emit(ly_popup, "success", "4");
-//    else if(enroll_count == 8 && (enroll_count <= 10))
-//       edje_object_signal_emit(ly_popup, "success", "5");
-      
 }
 
 int
