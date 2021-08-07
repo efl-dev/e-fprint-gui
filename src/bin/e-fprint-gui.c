@@ -164,7 +164,7 @@ _enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
 static void
 _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
 {
-   Evas_Object *popup, *box, *lb, *sep;
+   Evas_Object *popup, *box, *lb, *sep, *button;
    char buf[PATH_MAX];
    char buf1[PATH_MAX];
    const char *fingername;
@@ -221,6 +221,13 @@ _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
    evas_object_size_hint_align_set(sep, EVAS_HINT_FILL, 0.0);
    evas_object_show(sep);
    elm_box_pack_end(box, sep);
+   
+   
+   button = elm_button_add(box);
+   elm_object_text_set(button, "cancel");
+   evas_object_smart_callback_add(button, "clicked", _close_verify_popup, popup);
+   evas_object_show(button);
+   elm_box_pack_end(box, button);
       
 
    elm_object_content_set(popup, box);
@@ -240,7 +247,7 @@ _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
 static void
 _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
 {
-   Evas_Object *popup, *box, *lb, *sep;
+   Evas_Object *popup, *box, *lb, *sep, *button;
    char buf[PATH_MAX];
    char buf1[PATH_MAX];
    const char *fingername;
@@ -299,6 +306,13 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    evas_object_size_hint_align_set(sep, EVAS_HINT_FILL, 0.0);
    evas_object_show(sep);
    elm_box_pack_end(box, sep);
+   
+   button = elm_button_add(box);
+   elm_object_text_set(button, "cancel");
+   evas_object_smart_callback_add(button, "clicked", _close_enroll_popup, popup);
+   evas_object_show(button);
+   elm_box_pack_end(box, button);
+   
       
 
    elm_object_content_set(popup, box);
