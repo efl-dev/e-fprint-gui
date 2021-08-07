@@ -1,6 +1,6 @@
 install_data('e-fprint-gui.desktop',
              install_dir: join_paths(dir_data, 'applications'))
-install_data('e-fprint-gui.png',
+install_data('e-fprint-gui.svg',
              install_dir: join_paths(dir_data, 'icons'))
 host_os = host_machine.system()
 if host_os == 'linux'
