@@ -36,7 +36,7 @@ Eina_Value array;
 
 
 static void enrolled_fingers_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error, Eina_Value *args);
-static void _swallow_button();
+static void _update_theme();
 static void claim_device(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 static void _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
 static void _verify_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbus_Error_Info *error);
@@ -86,6 +86,11 @@ _close_verify_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
       evas_object_del(data);
       data = NULL;
    }
+
+      edje_object_signal_emit(ly, "reset_finger", "reset_finger"); // for GROUP hands/left_hand/right/hand
+      edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger"); // for GROUP finger
+      fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
+   _update_theme();
 }
 
 
@@ -99,6 +104,11 @@ _close_enroll_popup(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
       evas_object_del(data);
       data = NULL;
    }
+   
+      edje_object_signal_emit(ly, "reset_finger", "reset_finger"); // for GROUP hands/left_hand/right/hand
+      edje_object_signal_emit(ly, "not_enrolled_finger", "not_enrolled_finger"); // for GROUP finger
+      fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
+   _update_theme();
 }
 
 
@@ -119,7 +129,7 @@ _enroll_prop_get(void *data, Eldbus_Pending *p, const char *propname, Eldbus_Pro
    {
       printf("MESSAGE _enroll_prop_get: %s\n", error_info->message);
       printf("ERROR _enroll_prop_get: %s\n", error_info->error);
-
+      //TODO: display the error
    }else
       enroll_num = value;
 }
@@ -134,7 +144,7 @@ _verify_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
    {
       printf("MESSAGE _verify_start_cb: %s\n", error->message);
       printf("ERROR _verify_start_cb: %s\n", error->error);
-   
+      //TODO: display the error
       popup = data;
       evas_object_del(popup);
       popup = NULL;
@@ -151,7 +161,7 @@ _enroll_start_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
    {
       printf("MESSAGE _enroll_start_cb: %s\n", error->message);
       printf("ERROR _enroll_start_cb: %s\n", error->error);
-   
+      //TODO: display the error
       if(popup)
       {
          evas_object_del(popup);
@@ -224,7 +234,7 @@ _popup_verify_cb(void *data, Evas_Object *obj EINA_UNUSED)
    
    
    button = elm_button_add(box);
-   elm_object_text_set(button, "cancel");
+   elm_object_text_set(button, "close");
    evas_object_smart_callback_add(button, "clicked", _close_verify_popup, popup);
    evas_object_show(button);
    elm_box_pack_end(box, button);
@@ -308,7 +318,7 @@ _popup_enroll_cb(void *data, Evas_Object *obj EINA_UNUSED)
    elm_box_pack_end(box, sep);
    
    button = elm_button_add(box);
-   elm_object_text_set(button, "cancel");
+   elm_object_text_set(button, "close");
    evas_object_smart_callback_add(button, "clicked", _close_enroll_popup, popup);
    evas_object_show(button);
    elm_box_pack_end(box, button);
@@ -339,7 +349,7 @@ delete_selected_finger(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending,
       fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
       
       _dismiss_hover(data, NULL, NULL);
-      _swallow_button();
+      _update_theme();
    }
 }
 
@@ -592,7 +602,7 @@ _switch_hand(void *data, Evas_Object *obj EINA_UNUSED, void *event_info EINA_UNU
    elm_layout_file_set(ly, buf, data);
    
    fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
-   _swallow_button();
+   _update_theme();
 }
 
 
@@ -636,9 +646,9 @@ _finger_mode_select(void *data, Evas_Object *obj, void *event_info EINA_UNUSED)
 
 
 static void
-_swallow_button()
+_update_theme()
 {
-   Evas_Object *swallow_button, *right_list = NULL, *left_list, *leftright_list, *icon;
+   Evas_Object *swallow_button, *right_list = NULL, *left_list, *leftright_list, *icon = NULL;
 
    char buf[PATH_MAX];
 
@@ -747,8 +757,8 @@ _swallow_button()
    const char *list_item,  *list_item1;
    
    elm_list_clear(right_list);
-   
-   printf("COUNT %i:\n", eina_list_count(left_hand_list));
+   elm_list_clear(left_list);
+
    if(!eina_list_count(left_hand_list) || eina_list_count(left_hand_list) == 0)
    {
       left_hand_list = eina_list_append(left_hand_list, "Left little finger");
@@ -768,8 +778,7 @@ _swallow_button()
    
    
    EINA_LIST_FOREACH((Eina_List*) left_hand_list, l, list_item)
-   {  
-      
+   {
       icon = elm_icon_add(win);
       snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
       elm_image_file_set(icon, buf, "icon");
@@ -797,7 +806,6 @@ _swallow_button()
    
    EINA_LIST_FOREACH((Eina_List*) right_hand_list, l, list_item)
    {
-      
       icon = elm_icon_add(win);
       snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
       elm_image_file_set(icon, buf, "icon");
@@ -852,7 +860,7 @@ static void _select_mode(void *data, Evas_Object *obj, void *event_info)
    elm_layout_file_set(ly, buf, data);
    
    fprint_device_list_enrolled_fingers_call(new_proxy1, enrolled_fingers_cb, NULL, currentuser);
-   _swallow_button();
+   _update_theme();
 }
 
 
@@ -997,7 +1005,6 @@ _enroll_stopp_cb(Eldbus_Proxy *proxy, void *data, Eldbus_Pending *pending, Eldbu
    {
       printf("MESSAGE _enroll_stopp_cb: %s\n", error->message);
       printf("ERROR _enroll_stopp_cb: %s\n", error->error);
-
    }
 }
 
@@ -1135,7 +1142,8 @@ _enroll_status(void *data, const Eldbus_Message *msg)
    }
    else if(!strcmp(status, "enroll-completed"))
    {
-      snprintf(buf, sizeof(buf), "<color=green>%s</color>", status);
+//       snprintf(buf, sizeof(buf), "<color=green>%s</color>", status);
+      snprintf(buf, sizeof(buf), "<color=green>%s<br>%i/%i</color>", status, enroll_count, enroll_num);
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "success", buf1);
@@ -1144,7 +1152,8 @@ _enroll_status(void *data, const Eldbus_Message *msg)
    }   
    else if(!strcmp(status, "enroll-swipe-too-short") || !strcmp(status, "enroll-retry-scan") || !strcmp(status, "enroll-finger-not-centered") || !strcmp(status, "enroll-remove-and-retry") || !strcmp(status, "enroll-remove-and-retry"))
    {
-      snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
+//       snprintf(buf, sizeof(buf), "<color=red>%s</color>", status);
+      snprintf(buf, sizeof(buf), "<color=red>%s<br>%i/%i</color>", status, enroll_count, enroll_num);
       elm_object_text_set(lb_status, buf);
       
       edje_object_signal_emit(ly_popup, "failed", buf1);
@@ -1268,7 +1277,6 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    elm_win_autodel_set(win, EINA_TRUE);
       
    box = elm_box_add(win);
-   
    evas_object_show(box);
 
    h_box = elm_box_add(win);
@@ -1282,11 +1290,11 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    
    ly = elm_layout_add(h_box);
    snprintf(buf, sizeof(buf), "%s/themes/e-fprint-gui.edj", elm_app_data_dir_get());
-   elm_layout_file_set(ly, buf, "hands");
+   elm_layout_file_set(ly, buf, "right_hand");
    evas_object_show(ly);
 
 
-   _swallow_button(); // ADD "blank" Buttons for callbacks
+   _update_theme();
 
    
    elm_box_pack_end(h_box, ly);
@@ -1301,11 +1309,11 @@ elm_main(int argc EINA_UNUSED, char** argv EINA_UNUSED)
    evas_object_size_hint_align_set( h_box, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
    hv = elm_hoversel_add(h_box);
-   elm_object_text_set(hv, "Both hands");
+   elm_object_text_set(hv, "One hand");
    elm_hoversel_auto_update_set(hv, EINA_TRUE);
    elm_hoversel_hover_parent_set(hv, win);
-   elm_hoversel_item_add(hv, "Both hands", NULL, ELM_ICON_NONE, _select_mode, "hands");
    elm_hoversel_item_add(hv, "One hand", NULL, ELM_ICON_NONE, _select_mode, "right_hand");
+   elm_hoversel_item_add(hv, "Both hands", NULL, ELM_ICON_NONE, _select_mode, "hands");
    elm_hoversel_item_add(hv, "One finger", NULL, ELM_ICON_NONE, _select_mode, "finger");
    evas_object_show(hv);
    elm_box_pack_end(h_box, hv);
